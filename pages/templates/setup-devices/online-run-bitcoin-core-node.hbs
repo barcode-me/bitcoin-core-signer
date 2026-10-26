@@ -1,0 +1,90 @@
+{{#> layout}}
+{{> flow-header}}
+<section class="example-section">
+  <p>To test a wallet we actually need to have bitcoin core running and fully synced. This can actually take a long time even multiple days or weeks depending on your system. It is recommended to have at least 8GB of RAM and a fast SSD of at least 1TB. However, it is a good idea to sync a node with privacy in mind. There are two options a slower initial Tor sync or a faster initial VPN sync. For VPN I can only recommend Mullvad, but if you already have an existing one you could use that one.</p>
+  <p>It is possible to not use either and simply connect directly to the network for the initial sync, but be aware that you are broadcasting to the world that someone with this IP address runs a node and therefore might own bitcoin.</p>
+  <h2 id="shell-heading">Option A – VPN</h2>
+  <p>If using a VPN simply configure your VPN globally in Ubuntu so that all traffic goes through there. Then continue with the next section.</p>
+
+  <h2 id="shell-heading">Option B – Tor</h2>
+  <p>This option is free, and it is in fact the way I recommend to run a node for privacy reasons, more than anything whenever you need to broadcast a transaction, but also to perform the initial block sync. So let's install and setup Tor with Bitcoin Core.</p>
+
+{{#> code-block}}sudo apt install tor -y{{/code-block}}
+
+<p>Now let's edit the torrc file <code>nano /etc/tor/torrc</code> to enable the control port and authentication via cookie for users of the <code>debian-tor</code> group. This is required for Bitcoin Core to create .onion addresses:</p>
+
+{{#> code-block}}
+ControlPort 9051
+CookieAuthentication 1
+CookieAuthFileGroupReadable 1
+{{/code-block}}
+
+<p>Now let's add the user running bitcoin core to the tor group, in our case our current user.</p>
+
+{{#> code-block}}
+sudo usermod -aG debian-tor $USER
+{{/code-block}}
+
+<p>Finally let's restart tor:</p>
+
+{{#> code-block}}
+sudo systemctl restart tor
+{{/code-block}}
+</section>
+
+<section class="example-section">
+<h2 id="shell-heading">Configure Bitcoin Core for Tor</h2>
+<p>Add these options to connect your node through Tor only, not all of them are related to Tor, but they are reasonable, so feel free to research more about them if you want to change them <code>nano ~/.bitcoin/bitcoin.conf</code>:</p>
+{{#> code-block}}
+# add these lines at the end of the file
+listen=1
+listenonion=1
+bind=127.0.0.1
+proxy=127.0.0.1:9050
+torcontrol=127.0.0.1:9051
+onlynet=onion
+server=1
+maxuploadtarget=0M
+dbcache=2048
+discover=0
+datacarriersize=42
+{{/code-block}}
+</section>
+
+<section class="example-section">
+<h2 id="shell-heading">Pruned node</h2>
+<p>If your laptop doesn't have at least 800GB you will need to run a pruned node so configure it as follows <code>nano ~/.bitcoin/bitcoin.conf</code>:</p>
+{{#> code-block}}
+# add this line
+prune=150000 # number of MB 150GB
+{{/code-block}}
+</section>
+
+<section class="example-section">
+<h2 id="shell-heading">Start Bitcoin Core</h2>
+<p>This will start running bitcoin core in the background:</p>
+{{#> code-block}}
+bitcoind --daemon -datadir=/YOUR/DRIVE
+{{/code-block}}
+
+<p>You can add an alias in <code>nano ~/.bashrc</code> to avoid typing the full path in case your data dir is static:</p>
+
+{{#> code-block}}
+alias bitcoin-start=bitcoind --daemon -datadir=/YOUR/DRIVE
+{{/code-block}}
+</section>
+
+<section class="example-section">
+<h2 id="shell-heading">Wait for full sync</h2>
+<p>You need to wait until the node fully syncs before you can actually use it. Like I said, this can take a long time. Check the progress regularly by running:</p>
+</section>
+{{#> code-block}}
+bitcoin-cli -getinfo
+# or
+tail -f ~/.bitcoin/debug.log
+{{/code-block}}
+
+<p>If the process ever stops you will get errors, simply restart it with <code>bitcoind --daemon -datadir=/YOUR/DRIVE</code>.</p>
+<p>You can move on to the next step and setup the offline device since we don't need bitcoin core until we want to sign a transaction.</p>
+{{> flow-navigation}}
+{{/layout}}

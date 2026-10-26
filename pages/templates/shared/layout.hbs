@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{{pageTitle}} · {{siteTitle}}</title>
+    <meta name="description" content="{{description}}">
+    <link rel="stylesheet" href="{{stylesheetHref}}">
+  </head>
+  <body>
+    <a class="skip-link" href="#content">Skip to content</a>
+    <div class="shell">
+      <header class="site-header">
+        <a class="brand" href="{{homeHref}}">Bitcoin Core BIP39 Signer</a>
+        <span class="site-label">FIELD GUIDE</span>
+      </header>
+      <div class="page-layout">
+        <nav class="sidebar">
+          <p class="nav-label">Contents</p>
+          <a href="{{homeHref}}"{{#if isIndex}} class="is-current"{{/if}}>Overview</a>
+          {{#each sections}}
+          {{#if standalone}}
+          <a href="{{href}}"{{#if isCurrent}} class="is-current"{{/if}}>{{title}}</a>
+          {{else}}
+          <details class="sidebar-section"{{#if isCurrentFlow}} open{{/if}}>
+            <summary>{{title}}</summary>
+            <ol class="sidebar-steps">
+              {{#each steps}}
+              <li><a href="{{href}}"{{#if isCurrent}} class="is-current"{{/if}}>{{number}}. {{title}}</a></li>
+              {{/each}}
+            </ol>
+          </details>
+          {{/if}}
+          {{/each}}
+        </nav>
+        <main id="content" tabindex="-1">
+{{> @partial-block}}
+        </main>
+      </div>
+      <footer class="site-footer">
+        <span>Bitcoin Core BIP39 Signer</span>
+        <span>A personal reference guide</span>
+      </footer>
+    </div>
+  </body>
+</html>

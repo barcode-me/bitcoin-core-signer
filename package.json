@@ -1,0 +1,12 @@
+{
+  "name": "bitcoin-core-bip39-signer",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node scripts/dev.mjs",
+    "build": "node scripts/build-pages.mjs"
+  },
+  "devDependencies": {
+    "handlebars": "^4.7.8"
+  }
+}

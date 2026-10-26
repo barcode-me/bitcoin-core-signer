@@ -1,0 +1,53 @@
+[
+  {
+    "slug": "requirements",
+    "title": "Requirements",
+    "description": ""
+  },
+  {
+    "slug": "online-boot-install-ubuntu",
+    "title": "Online Laptop – Create bootable Ubuntu USB drive",
+    "description": "Create a bootable Ubuntu USB drive"
+  },
+  {
+    "slug": "online-bootable-usb",
+    "title": "Online Laptop – Boot and install Ubuntu from USB drive",
+    "description": "Boot from the USB drive, install Ubuntu, and record your device credentials."
+  },
+  {
+    "slug": "online-updates-and-usbguard",
+    "title": "Online Laptop – Install updates and USBGuard",
+    "description": "Update Ubuntu and configure approved USB devices."
+  },
+  {
+    "slug": "online-install-bitcoin-core",
+    "title": "Online Laptop – Install Bitcoin Core",
+    "description": "Download, verify, and install Bitcoin Core 31.1."
+  },
+  {
+    "slug": "online-run-bitcoin-core-node",
+    "title": "Online Laptop – Run and sync a Bitcoin Core node",
+    "description": "Sync a node."
+  },
+  {
+    "slug": "offline-bootable-usb",
+    "title": "Offline Laptop – Create bootable Alpine Linux USB drive",
+    "description": ""
+  },
+  {
+    "slug": "offline-boot-install-alpine",
+    "title": "Offline Laptop – Boot and install Alpine from USB drive",
+    "description": "Boot from the USB drive."
+  },
+  {
+    "slug": "going-offline",
+    "title": "Going Offline",
+    "description": "Take the laptop fully offline."
+  },
+  {
+    "slug": "complete",
+    "title": "Complete",
+    "description": "You have completed this process."
+  }
+  
+]

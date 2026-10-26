@@ -1,0 +1,4 @@
+[
+  { "slug": "seed-phrase", "title": "Encrypt a seed phrase by hand", "description": "Encrypt a seed phrase by hand." },
+  { "slug": "xprv", "title": "Encrypt an xprv", "description": "Encrypt and back up an extended private key." }
+]

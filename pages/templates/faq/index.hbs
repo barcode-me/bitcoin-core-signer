@@ -1,0 +1,50 @@
+{{#> layout}}
+<p class="eyebrow">REFERENCE</p>
+<h1>FAQ</h1>
+
+<section class="example-section">
+  <h2>Why one time pad encryption?</h2>
+  <p>One-time pad encryption is extremely straight forward and it is considered unbreakable as long as the pad is truly random and it is used only once. The decryption algorithm is straightforward so anyone can write a script to do it with a google search or even by asking AI to write a script for it. The main reason to choose this encryption method is to maintain the same byte size of the original content and to avoid introducing libraries that might not be well maitained in the future or that the method becomes insecure in the future.</p>
+  <p>The inconvenience of one-time pads is that they need to be as long as the data they are encrypting and since the secret keys we are encrypting are just 32 bytes long then the pad can be just the same length. Make sure to store the pad in hex format since it is a binary stream. The program that decrypts the one-time pads simply parses both hexes the pad and the encrypted content as a bytestream and runs a XOR operation per byte to obtain the decrypted bytestream. This can be done easily with python without introducing any libraries. </p>
+</section>
+
+<section class="example-section">
+  <h2>What if some one finds a backup?</h2>
+  <p>Since it is encrypted there is no immediate risk. However, if you know it has been seized by criminals, government officials, or simply anyone you don't trust then you should consider moving to a new multi-sig. You can stll continue to use the other keys, just create a new wallet where the compromised key is no longer in the quorum and add a new one. Make sure to properly test when you do this, the last thing you want is to mix backups and end up with a mess. If you are unsure it is better to start from scratch and get rid of the old backups.</p>
+</section>
+
+<section class="example-section">
+  <h2>What if some keys are lost?</h2>
+  <p>Since it is encrypted there is no immediate risk. However, if you know it has been seized by criminals, government officials, or simply anyone you don't trust then you should consider moving to a new multi-sig. You can stll continue to use the other keys, just create a new wallet where the compromised key is no longer in the quorum and add a new one. Make sure to properly test when you do this, the last thing you want is to mix backups and end up with a mess. If you are unsure it is better to start from scratch and get rid of the old backups.</p>
+</section>
+
+<section class="example-section">
+  <h2>What if I forget part of the setup?</h2>
+  <p>This is why the process is documented and the document is shared with heirs in advance. Even if you suffer health problems and can’t remember anything about it your heir will already know what to do. Also the dead man switch will help you and your heir get a reminder about the guide in case all of you forgot, but this is just extra protection.</p>
+  <p>Reading the document will reveal what to do.</p>
+</section>
+
+<section class="example-section">
+  <h2>What if the password manager fails?</h2>
+  <p>You should have a backup password manager even if it is just for bitcoin inheritance, consider also adding your email password to ensure they can recover your other credentials, also make sure to include the 2FA password. Two candidates are:</p>
+  <ul>
+    <li><a href="https://bitwarden.com/help/emergency-access/">Bitwarden requires a paid subscription, but not for the other party</a></li>
+    <li><a href="https://proton.me/support/emergency-access">Proton requires a paid subscription, but not for the other party</a></li>
+  </ul>
+  <p>Remember that you can export backups of your vault so you can be protected in case one of them goes out of business you will have time to migrate to a new one. This will also work in case of both companies going out of business. However, the chances of both businesses failing while at the same time you are no longer around is extremely rare specially since it will all need to happen in a very short time window of a couple months. So this is not really a concern.</p>
+  <p>Document this for your heir so that they can request access.</p>
+</section>
+
+<section class="example-section">
+  <h2>User provided entropy vs device entropy</h2>
+  <p>I am an advocate of removing single points of failure and creating wallets using entropy from different strategies protects precisely against a single faulty mechanism or implementation. This problem is really not a concern for Bitcoin Core, it has been battle tested and the specific feature to get entropy is not updated regularly if at all. However, it is possible that you might run into an obscure scenario where a very specific OS version and hardware combination could result in some uknown case of low entropy. To avoid this extremely rare situation you can use different laptops with different hardware on them and install different OS versions and generate a key per device.</p>
+  <p>This problem is more common with wallet hardwares where new ones pop up every year and their implementations have not been battle tested and there is essentially no code review outside the internal team. So the one thing you don't want is to mix good entropy from Bitcoin Core with potentially bad entropy from other implementations. That would not make it more secure.</p>
+  <p>If you still feel strongly about introducing custom entropy it is possible, but you need to take extra steps to create a wallet without private keys and import your own private descriptor with your own entropy.</p>
+</section>
+
+<section class="example-section">
+  <h2>Why run USBGuard?</h2>
+  <p>The laptop for the bitcoin dedicated device is very secure in the sense that the attack surface is minimum. The file system is encrypted with a strong passphrase, it is only running verified software and not much outside of the already existing software, you are running it in an isolated network via ethernet, and the usage is limited to bitcoin related operations with bitcoin core and python scripts without external libraries. This means no devices can reach it and so there is no way to deliver a payload to exploit the system other than through the limited attack surface inherit to the bitcion related operations we run. But then there is USB. All it takes is someone including yourself unknowingly connecting a malicious USB device and the whole system becomes compromised. With USBGuard all USB devices that have not been previously authorized are blocked by default so any attempt of introducing malware via BadUSB is impossible.</p>
+  <p>It essentially protects against evil maid attacks, but you should still keep those devices properly isolated from people.</p>
+</section>
+{{/layout}}

@@ -1,0 +1,55 @@
+{{#> layout}}
+{{> flow-header}}
+<section class="example-section">
+  <h2 id="download-heading">Download Bitcoin Core</h2>
+  <p>Open a terminal by pressing <code>Ctrl + Alt + T</code>. These commands download Bitcoin Core 31.1 for a 64-bit Intel or AMD laptop:</p>
+  {{#> code-block}}cd ~/Downloads
+wget https://bitcoincore.org/bin/bitcoin-core-31.1/bitcoin-31.1-x86_64-linux-gnu.tar.gz
+wget https://bitcoincore.org/bin/bitcoin-core-31.1/SHA256SUMS
+wget https://bitcoincore.org/bin/bitcoin-core-31.1/SHA256SUMS.asc{{/code-block}}
+</section>
+<section class="example-section">
+  <h2 id="checksum-heading">Verify the checksum</h2>
+  <p>Check that the downloaded archive matches its entry in the checksum file:</p>
+  {{#> code-block}}sha256sum --ignore-missing --check SHA256SUMS{{/code-block}}
+  <p>Look for <code>bitcoin-31.1-x86_64-linux-gnu.tar.gz: OK</code>. If it is missing or reports a failure, see <a href="#failed-binary-verification">Failed binary verification</a>.</p>
+</section>
+<section class="example-section">
+  <h2 id="signature-heading">Verify the signatures</h2>
+  <p>Download and import the builder keys:</p>
+  {{#> code-block}}wget -O guix.sigs.tar.gz https://github.com/bitcoin-core/guix.sigs/archive/refs/heads/main.tar.gz
+tar -xzf guix.sigs.tar.gz
+gpg --import guix.sigs-main/builder-keys/*{{/code-block}}
+  <p><strong>Verify the signing keys' full fingerprints against trusted sources.</strong> Importing a key does not establish its identity. Follow the <a href="https://bitcoincore.org/en/download/">official download verification instructions</a> and compare the fingerprints for the signers you trust.</p>
+  <p>Verify the signatures against the checksum file:</p>
+  {{#> code-block}}gpg --verify SHA256SUMS.asc SHA256SUMS{{/code-block}}
+  <p>Look for <code>Good signature</code> from the signers whose fingerprints you verified. Continue when the archive checksum matches and the trusted signatures verify. Otherwise, see <a href="#failed-binary-verification">Failed binary verification</a>.</p>
+</section>
+<section class="example-section">
+  <h2 id="extract-heading">Extract and add to PATH</h2>
+  <p>Extract the verified archive into your home directory:</p>
+  {{#> code-block}}tar -xzf bitcoin-31.1-x86_64-linux-gnu.tar.gz -C ~{{/code-block}}
+  <p>Bitcoin Core is now in <code>~/bitcoin-31.1</code>. Open your Bash configuration:</p>
+  {{#> code-block}}nano ~/.bashrc{{/code-block}}
+  <p>Add this line at the end of the file and save it:</p>
+  {{#> code-block}}export PATH="$PATH:$HOME/bitcoin-31.1/bin"{{/code-block}}
+  <p>Close and reopen the terminal for the change to take effect. You can then run the Bitcoin Core binaries from any directory.</p>
+</section>
+<section class="example-section">
+  <h2 id="failed-binary-verification">Failed binary verification</h2>
+  <p class="lead">
+You can safely ignore the message `WARNING: This key is not certified with a trusted signature!`.
+</p>
+<p>
+If one of the following happens:
+
+<ul>
+<li>the  imported gpg key does not match the source key, usually displayed on the website</li>
+<li>during checksum verification you don't see the `OK` message (file checksum missmatch)</li>
+<li>during signature verification you don't see the text `Good signature` (signature missmatch)</li>
+</ul>
+
+Then it is not safe to continue and you might have a security problem or hardware problem. Re-download and retry the same steps. If the issue continues then there is something wrong with your setup and it is not safe to continue. If your hardware is faulty like RAM or drive it is possible that bits get flipped and it causes issues. But this is very rare and you should not assume this is the case. Debugging this is beyond the scope of this guide and you should do your own research based on what you are experiencing. But whatever you do do not continue with wallet creation until all signatures have been verified.</p>
+</section>
+{{> flow-navigation}}
+{{/layout}}

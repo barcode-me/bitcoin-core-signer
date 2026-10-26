@@ -1,0 +1,72 @@
+{{#> layout}}
+{{> flow-header}}
+
+<section class="example-section">
+  <h2>Create a seedphrase</h2>
+  <p>Follow the <a href="../setup-devices" target="_blank">setup devices guide</a> to have an offline device you where you can the followin operations.</p>
+
+  <p>I prefer to use user generated entropy from dice rolls or coin flips to create BIP39 seed phrases. It is really simply you roll 6-sided dice and map the sides to the following values:</p>
+
+  <div class="conversion-table-wrapper">
+  <table class="conversion-table">
+    <thead>
+      <tr><th scope="col">Dice roll</th><th scope="col">Binary</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>1</td><td>00</td></tr>
+      <tr><td>2</td><td>01</td></tr>
+      <tr><td>3</td><td>10</td></tr>
+      <tr><td>4</td><td>11</td></tr>
+      <tr><td>5</td><td>0</td></tr>
+      <tr><td>6</td><td>1</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <p>Then collect 128 bits for a 12 word seed phrase or 256 bits for a 24 word seed phrase. You can then lookup the words in this table: <a target="_blank" href="../../assets/bip39-bits-to-words.pdf">BIP39 bits-to-words table (PDF)</a>. Every 11 bits is one word and the able is structured in a way that each table is a group of the first 4 bits, then each row is another 4 bits, and finally each colum is the final 3 bits.</p>
+
+  <p>Ultimately you will need to hash the entropy bits to get a checksum specifically you need to get a sha256 hash and the last 4 bits is the checksum for the 12 word seedphrase or the last 8 bits for the 24 word seedphrase.</p>
+{{#> code-block caption="Python" language="python"}}import hashlib
+
+binary_string = '0110100001100101011011000110110001101111' # 128 or 256 bits
+
+# 1. Convert binary string to integer
+num = int(binary_string, 2)
+
+# 2. Convert integer to bytes (big-endian)
+# Calculate byte length: (bit_length + 7) // 8
+byte_length = (len(binary_string) + 7) // 8
+data = num.to_bytes(byte_length, byteorder='big')
+
+# 3. Compute SHA-256
+hash_object = hashlib.sha256(data)
+hex_digest = hash_object.hexdigest()
+binary_digest = bin(int(hex_digest, 16))[2:].zfill(256)
+
+print('sha256 hash:', hex_digest)
+print('12 words (4 bit checksum):', binary_digest[-8:-4], binary_digest[-4:])
+print('24 words (8 bit checksum):', binary_digest[-8:-4], binary_digest[-4:])
+{{/code-block}}
+
+<p>You would then add those bits to the original 128 or 256 bit sequence and calculate the last word.</p>
+</section>
+
+<section class="example-section">
+  <h2>Create a passphrase</h2>
+
+  <p>I like to use the technique or rolling dice and looking up the words in the <a href="../../assets/eff-large-wordlist.txt" target="_blank">eff-large-wordlist.txt</a> you notice each word has 5 digits. You need to roll 5 dice to generate a word. I use anywhere from 6 to 9 words in my passphrases with random casing where the last word is actually just the digits you roll and not the word itself. The casing is done by referencing the last digit word and shifting to uppercase a letter that matches the base-1 index. For example the passphrase you need to memorize is <code>abide-barcode-caucasian-delicate-hello-25653</code> but when you actually type it out it would be <code>aBide-barcOde-caucaSian-deliCate-heLlo-25653</code>. The last digit word is actually a map to know which characters to shift to upper case so a 2 would be the second letter of the first word then the 5 would be the 5 letter of the second word and so on. This way you don't have to remember the random casing, just the lowercase passphrase plus the 5 digits which is itself another word so it is indeed a 6 word passphrase with random casing. For the separators you can use anything you want I prefer just dashes, but you can use any character as long as you remember it. I avoid randomizing it because it gets too complex to remember and a dash or space works just fine.</p>
+  <p>This type of passphrase has a very large search space. I'm actually unsure how to calculate it, because words have different character lenghts but assuming an average of 5 letters per word it would be <code>((6^5)x5)^5 ~= 10^23</code> assuming the attacker knows you are using this strategy otherwise it is essentially another word <code>((6^5)x5)^6 ~= 10^27</code>. If you don't think this is enough go up to 8 words plus the digit word and you will have around <code>10^36</code> which is close to the seed phrase entropy, but it is in my opinion unnecessary.</p>
+</section>
+
+<section class="example-section">
+  <h2>Backup seedphrase and passphrase</h2>
+
+  <p>I am a fan of using physical backups not digital or hardware backups, also I always encrypt them. Simply stamp the hexadecimal encoding of the entropy 132 bits for 12 words 264 bits for 24 words. It would take 33 and 66 hexadecimal characters respectively. Simply write these down on paper or stamp them to metal.</p>
+  <p>Use my <a href="../encrypt-your-backups/seed-phrase.hbs/index.html" target="_blank">encryption guide</a> then come back here</p>
+  <p>Store the decryption key in a password manager.</p>
+  <p>I recommend buying a cheap non-bitcoin specific stamp kit of 1mm characters. Then you can use a single 304 stainless steel metal sheet or a washer to stamp the hex characters on. Or use archival paper, but be aware of fire damage. Only use this approach if you live in an aread where fires are rare.</p>
+  <p>Redundancy is key, have backups distrubited in at least 3 locations.</p>
+</section>
+
+{{> flow-navigation}}
+{{/layout}}

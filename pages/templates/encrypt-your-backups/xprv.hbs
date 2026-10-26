@@ -1,0 +1,21 @@
+{{#> layout}}
+{{> flow-header}}
+<section>
+  <p>Lots of people who use Bitcoin Core tend to be more experienced in the world of computer science or they are simply more technically inclined compare to users of hardware wallets. They tend to prefer setting up secure offline computers where and encrypted backups of the full wallet file in different devices for long-term storage and backup. However, this approach is more complex, requires deep knowledge about computers, requires more maintenance, and it is not necessarily cheap. For the people who are already technical it is not a big deal, but for the newcomers it is a labyrinth.</p>
+  <p>In Bitcoin Core a private descriptor or a set of them are the necessary information needed to recover a wallet. In some sense the descriptor is your backup. People traditionally backup a full wallet file <code>wallet.dat</code>, but the real critical piece is the descriptor. To be even more precise the extended private key within a descriptor is the real critical piece of information. Well I lied, within an extended private key which is 78 bytes you have 32 secret bytes. This is the only real sensible information that must not fall into the hands of an adversary. The rest of it is necessary, but it is not as sensible. In some sense these bytes are your backup. However, the community does not really backup these bytes by themselves.</p>
+
+  <h2>Backup 32 secret bytes offline</h2>
+  <p>If you can extract the 32 secret bytes out of the private descriptor. Then you are left with two pieces of information: a redacted descriptor and 32 secret bytes. The redacted descriptor can be encrypted and backed up in multiple clouds so that it is never lost. The 32 secret bytes however, should be treated with a lot more caution. You can still encrypt it, but many and myself included believe that putting the encrypted secret in the cloud and storing the password also in the cloud could be a disaster waiting to happen. A sophisticated attacker could launch a targetted attack and find a way to get those two together end extract your private key.</p>
+    
+  <p>If you don't use a password manager then you are have the complex task of finding a secure way to store the password without involving the cloud. You are now in the realm of long-term data storage, and it can be quite tricky. I have had lost drives that I wish I hadn't and I thought I knew better. If on the other hand you decide to simply remember the password then now you are vulenrable to the human aspect of forgetfulness or brain damage. Even if you find a way to store the password securely such as with Shamir secret sharing scheme, you are still vulnerable to some side channel attack where the adversary could get both encrypted pieces of data and find a side channel to extract the decryption key in some other way. Even if you manage to solve that you are also vulnerable to other types of attacks in the physical world. Having all your keys online can make you vulenrable to extortion, torture, and more.</p>
+  
+  <p>The point is that keeping the secret bytes offline and encrypted is a must in my opinion.</p>
+
+  <h2>Metal backups</h2>
+  <p>Well the 32 bytes can be encrypted with a one-time pad, recorded encrypted as 64 hex characters to some physical medium like metal for durability, and placed in a secure location. The pad can then be encrypted itself and stored in the cloud. This way physical access to locations is fully required. If you use multi-sig then access to multiple locations is required in addition to cloud access.</p>
+
+  <h2>Specifics</h2>
+  <p>To backup you would take a descriptor in JSON format. Extract the xprv out of the plain text descriptor field. Decode the base58 string convert it to hex. Find the byte offset for the 32 byte secret. Extract them and replace them with placeholder characters. Now you can backup the JSON as a redacted private descriptor. Whenever you want to restore it you would do string manipulation to insert the secret bytes back into the place holder positions re-encode it as base58 and import the descriptor into a wallet.</p>
+</section>
+{{> flow-navigation}}
+{{/layout}}

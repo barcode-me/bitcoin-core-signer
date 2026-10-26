@@ -1,0 +1,71 @@
+{{#> layout}}
+{{> flow-header}}
+<section class="example-section">
+
+<section class="example-section">
+<h2 id="shell-heading">Boot into Alpine</h2>
+<p>Boot into Alpine off the USB on the offline laptop. Simply insert the USB and find the key press sequence on the laptop to boot off the USB.</p>
+</section>
+
+<section class="example-section">
+<h2 id="shell-heading">Configure Alpine</h2>
+{{#> important-callout}}
+<p>Go ahead and connect the ethernet cable to have internet access. It is ok to connect to the internet while the device is being configured. Alternatively, if you prefer to not connect this device to the internet at all you can do these steps on a separate device connected to the internet like the online computer.</p>
+{{/important-callout}}
+<p>This process is key since it allows the USB drive to be used to boot Alpine but also to persist layers of custom configuration via <code>lbu</code>. Once you have can boot from the USB run the following within Alpine.</p>
+
+<p>When running <code>setup-alpine</code> you will be asked many configuration questions just accept the defaults and choose a strong password for the root user. Also add a user, choose any username and strong password but we won't actually use it, it just needs to be set for the system to work properly. If you ever forget the password you can just re-create the alpine USB again:</p>
+
+{{#> code-block}}
+apk update
+setup-alpine
+setup-apkrepos
+setup-desktop gnome
+setup-user
+apk add setup-xorg-base xfce4 xfce4-terminal lightdm-gtk-greeter dbus
+rc-update add dbus
+rc-update add lightdm
+apk cache download
+lbu commit -d
+reboot
+{{/code-block}}
+
+<p>At this point your system will reboot and you should be back on a GUI. If not pause and rethink you might need to debug.</p>
+</section>
+
+<section class="example-section">
+<h2 id="shell-heading">Sign into Alpine</h2>
+<p>No matter what I tried I was unable to login with a regular user, because the system just froze upon login on the GUI, but logging in as root was possible. However, not adding a user seems to cause problems so make sure to add it as indicated in the previous step. Once logged in as root in the GUI go ahead and install bitcoin and setup any custom files that you might need such as python scripts and install python dependencies:</p>
+
+
+{{#> code-block}}
+apk add git bitcoin bitcoin-cli
+
+cd ~/Downloads
+git clone https://github.com/barcode-me/bip39-to-bitcoin-core
+cd bip39-to-bitcoin-core
+python3 -m venv venv
+source venv/bin/activate
+pip3 install -r requirements.txt
+
+lbu add ~/bip39-to-bitcoin-core # to persist a custom directory to the USB
+lbu commit -d
+
+reboot
+{{/code-block}}
+
+<p>At this point everything is in place so just reboot and loggin again to ensure everything shows up as it was. When everything looks good go ahead and unmount the USB and confirm there are no drives attached. Then physically eject the USB from the device:</p>
+
+{{#> code-block}}
+df -h # shows the USB mounted as /dev/sd*
+umount -l /media/usb # or run `ls /media/*` to see which one
+df -h # no longer mounted
+
+# now physically eject the USB from the device
+{{/code-block}}
+
+<p>Now if you want to make modifications to your system just reboot connect to the internet via an ethernet cable and make the requried changes and run <code>lbu commit -d</code>, unmount and eject the USB and continue on.</p>
+
+</section>
+{{> flow-navigation}}
+{{/layout}}

@@ -1,0 +1,27 @@
+{{#> layout}}
+{{> flow-header}}
+<section class="example-section">
+  <h2 id="security-updates-heading">Install security updates</h2>
+  <p>Once in Ubuntu, open a terminal by pressing <code>Ctrl + Alt + T</code> and install updates by running the following:</p>
+  {{#> code-block}}sudo apt update
+sudo apt -y full-upgrade{{/code-block}}
+</section>
+<section class="example-section">
+  <h2 id="usbguard-heading">Install USBGuard</h2>
+  <p>To protect the system against unauthorized USB devices, install USBGuard and configure it to allow only approved devices:</p>
+  {{#> code-block}}sudo apt install -y usbguard{{/code-block}}
+  <p>Include all currently plugged-in devices in the policy. Make sure only devices you trust are connected:</p>
+  {{#> code-block}}sudo sh -c 'usbguard generate-policy &gt; /etc/usbguard/rules.conf'{{/code-block}}
+  <p>Review <code>/etc/usbguard/rules.conf</code> to check that everything looks good, then start the service and enable it to start on boot:</p>
+  {{#> code-block}}sudo systemctl start usbguard.service
+sudo systemctl enable usbguard.service{{/code-block}}
+  <p>You can allow or block devices later. Run <code>man usbguard</code> for full details. The basic commands are below; replace <code>id</code> with the device ID from the list and choose either block or allow:</p>
+  {{#> code-block}}sudo usbguard list-devices
+sudo usbguard block-device id -p # Get id from the previous list output
+sudo usbguard allow-device id -p # Get id from the previous list output
+sudo systemctl restart usbguard.service{{/code-block}}
+  <p>To see live device events, run the following command before connecting a new device. Use its ID to allow it with the command above:</p>
+  {{#> code-block}}sudo usbguard watch{{/code-block}}
+</section>
+{{> flow-navigation}}
+{{/layout}}

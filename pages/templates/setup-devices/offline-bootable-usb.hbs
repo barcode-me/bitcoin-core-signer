@@ -1,0 +1,19 @@
+{{#> layout}}
+{{> flow-header}}
+<section class="example-section">
+  <h2 id="shell-heading">Create a bootable Alpine Linux USB drive</h2>
+
+<p>These instructions are based off <a href="https://wiki.alpinelinux.org/wiki/Create_a_Bootable_Device" target="_blank">this guide</a> using the manual process outlined in <code>Manually copying Alpine files</code>:</p>
+
+{{#> important-callout}}
+<p>You have to run the commands as root <code>sudo</code> from a linux system like Ubuntu.</p>
+<p>One of the steps requires you to reference the ISO as a cdroom, you can simply run:</p>
+{{/important-callout}}
+
+{{#> code-block}}
+sudo mkdir -p /media/cdroom
+sudo mount -o loop,ro /path/to/image.iso /media/cdroom
+{{/code-block}}
+</section>
+{{> flow-navigation}}
+{{/layout}}

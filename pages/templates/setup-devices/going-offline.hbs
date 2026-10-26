@@ -1,0 +1,17 @@
+{{#> layout}}
+{{> flow-header}}
+<section class="example-section">
+  <p>You must now ensure everything is in place to ensure the device is secure and fully offline:</p>
+
+  <ul>
+    <li>You are running alpine on the offline device (just making sure)</li>
+    <li>You removed the wifi and bluettoth chip (usually the same chip)</li>
+    <li>You removed all storage drives HDD and SSD (some laptops have multiple)</li>
+    <li>You unmounted the alpine boot USB and physically ejected it (see last step for instructions)</li>
+    <li>You physically disconnected the ethernet cable</li>
+  </ul>
+
+  <p>At this point you should be able to do whatever you want and nothing will be persisted after a reboot because everything is running off RAM and there is no physical storage device that could persist anything even if you or malware attempted to.</p>
+</section>
+{{> flow-navigation}}
+{{/layout}}

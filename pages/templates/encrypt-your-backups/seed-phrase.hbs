@@ -1,0 +1,80 @@
+{{#> layout}}
+{{> flow-header}}
+<section class="example-section">
+  <p>This is a topic of heated dabate because to encrypt a seed phrase you need to enter it into a computer, phone, or some digital device. On one side are the people who follow the mantra of not entering a seed phrase into a device that is not their hardware wallet. On the other hand the poeple who say if the device is secure and offline then what is the problem. I'm not going to take a side, I think each makes good points. However, there is a way to encrypt a seedphrase without entering it into a device at all. In fact you can do it completely by hand without any crazy complex math just some bitwise operations.</p>
+
+<h2>Worksheets</h2>
+
+<p>It is way easier to use a worksheet that I generated for you. Simply print it and fill out. When you read the whole it will make sense.</p>
+<ul>
+  <li><a target="_blank" href="../../assets/seed-encryption-worksheet-black-and-white.pdf">Encryption worksheet (PDF)</a></li>
+  <li><a target="_blank" href="../../assets/seed-decryption-worksheet-black-and-white.pdf">Decryption worksheet (PDF)</a></li>
+  <li><a target="_blank" href="../../assets/bip39-bits-to-words.pdf">BIP39 bits-to-words table (PDF)</a></li>
+</ul>
+{{#> important-callout}}
+Make sure to print the documents, do not use them on an internet connected device. If you don’t print it you can actually leak your seed phrase based on the scrolling of your browser window, so just print it. You never know if you have malware so don’t take a chance.
+{{/important-callout}}
+
+{{#> important-callout}}
+  Disclaimer: this can be a bit of a tedious process for some people, but if you enjoy puzzle solving it can actually feel therapeutic, if not then maybe this is not for you.
+  {{/important-callout}}
+
+  <h2>One-time pad encryption</h2>
+  <p>If you’ve never heard of one-time pad encryption it is about the simplest algorithm to encrypt data, and it is considered unbreakable as long as the source of randomness is cryptographically secure and as long as you don’t reuse it to encrypt more than one piece of data. You should go ahead and read about one-time pad encryption so that you know more about it, and I will just give you the brief summary.
+</p>
+<p>
+Digital information is stored in binary format so just a string of 1s and 0s. The one-time pad is simply an algorithm to shift some of the bits in the data in a random way so that it becomes impossible to recover the original data unless you attempt every single combination or if you know the random sequence that was applied and apply the shift again on the encrypted data.
+</p>
+<p>
+The pad is the random bit sequence, and the encrypted data is the result of taking the original data and applying the bit shifts based on the pad. If you apply the pad on the encrypted data it then returns the original data. That’s it. Remember it is called a one-time pad because you should only use it to encrypt a single piece of data. If you need to encrypt something else you create a new pad. If you reuse the pad on multiple data you leak information about the pad and it can lead to adversaries recovering the pad.
+</p>
+
+<h2>Seed phrase one-time pad encryption</h2>
+
+<p>One-time pad is only viable for small pieces of data because it essentially doubles the size of whatever you encrypt. Fortunately seed phrases are very small pieces of data. The binary representation of your 12-word seed phrase fits into 132 bits. Each word can be encoded in 11 bits and 11 x 12 = 132. Therefore you only need a one-time pad of 132 bits. Since this is a small number you can actually generate the pad yourself completely offline. There are different methods but one of the simplest and accessible to everyone is by flipping a coin 132 times. You write down the 132 bit string into paper, to make it easier to work with, split it into 4-bit chunks.</p>
+
+<p>Now you can encode your seed phrase in binary using a conversion table from word to binary like this one <a target="_blank" href="../../assets/bip39-bits-to-words.pdf">BIP39 bits-to-words table (PDF)</a>. You will end up with another 132 bits.</p>
+
+<p>Now align both streams of bits one on top of the other and apply the bitwise exclusive or (XOR) operation. It simply means that if both bits are different the result is 1 if they are the same the result is 0, and write down the result below. So you should end up with 3 rows of bits. First row is the pad, second row is the binary seed phrase, third row is the encrypted seed phrase. Now you have encrypted your seed phrase.</p>
+
+<h2>Backups</h2>
+<p>If you are interested in this you are probably using metal or paper backups already. In fact you could backup that sequence of bits to metal or paper. However, if you are like me you agonize creating metal backups. There is a way to compact the number of characters from 132 to 33. Stamping 33 characters to metal is a lot faster than stamping 132. All you need to do is convert from binary to hexadecimal. You can also do that by hand and it is actually straight forward using a conversion table. The worksheet above has a table included already. 
+  </p>
+
+<div class="conversion-table-wrapper">
+  <table class="conversion-table">
+    <thead>
+      <tr><th scope="col">Binary</th><th scope="col">Hexadecimal</th><th scope="col">Binary</th><th scope="col">Hexadecimal</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>0000</td><td>0</td><td>1000</td><td>8</td></tr>
+      <tr><td>0001</td><td>1</td><td>1001</td><td>9</td></tr>
+      <tr><td>0010</td><td>2</td><td>1010</td><td>A</td></tr>
+      <tr><td>0011</td><td>3</td><td>1011</td><td>B</td></tr>
+      <tr><td>0100</td><td>4</td><td>1100</td><td>C</td></tr>
+      <tr><td>0101</td><td>5</td><td>1101</td><td>D</td></tr>
+      <tr><td>0110</td><td>6</td><td>1110</td><td>E</td></tr>
+      <tr><td>0111</td><td>7</td><td>1111</td><td>F</td></tr>
+    </tbody>
+  </table>
+</div>
+
+
+<p>Remember I told you to split into 4-bit chunks, now you can easily map each chunk into one of the values in the table. The best part is that to transform it back to binary you simply apply the same operation in reverse. That’s it you can now backup your encrypted seed phrase to metal with only 33 characters.</p>
+
+<h2>Backup the one-time pad</h2>
+<p>In my opinion it is totally ok to backup the pad to a password manager instead of a physical backup. The pad itself contains no information about the seed phrase, but you can also back it up to metal if you prefer, just make sure to not store it next to the encrypted data. If you do then there is no point of encrypting it. If you back it up to a password manager you can either do the binary or the hexadecimal encoding, up to you.</p>
+<p>If you end up using a password manager I strongly suggest you set up a secondary password manager just in case one is unavailable at the time you need it or in case they go out of business or something. Also, make sure you are using MFA and a strong password and possibly set up an emergency contact for inheritance purposes.</p>
+
+<h2>Test the backup</h2>
+<p>This wouldn’t be complete until you test recovering from the backup. Run the whole recovery process. Take the hex string, convert it to binary into 4-bit chunks, copy the one time pad from the password manager into paper. Apply the same XOR operation. Remember if they match is a 1 if not is a 0. Then use the binary to word table above to find the seed phrases. Remember to use the printed version.</p>
+<p>The checksum in seed phrases will help you catch errors that you might have made during the manual math. If you did it wrong you will see a checksum error and you will need to repeat the process. I suggest you double check the decryption to make sure it is all good. As a secondary validation you should save the master fingerprint shown in the hardware wallet in your password manager, just to make sure that when you load that decrypted seed phrase into the hardware wallet you have an easy way to confirm you did it correctly and that you didn’t by some random chance managed to decrypt it in a way that results in a different wallet with a valid checksum. The fingerprint is that 8 character hexadecimal string that looks like <code>af 2f 13 25</code>.</p>
+
+<h2>Final thoughts</h2>
+<p>Now whenever someone finds your backup they likely won’t have a clue to even know what they are looking at. Since this is just a hex string you can obfuscate it by making it look like this is just some serial number, maybe put some sticker on the other side of the metal sheet that makes it look like it belongs to some industrial machine. You can then simply hide it inside some machine. Of course make redundant backups. Remember if you have multiple seeds use one pad per seed, it is called a one-time pad for a reason.</p>
+
+</section>
+
+
+{{> flow-navigation}}
+{{/layout}}

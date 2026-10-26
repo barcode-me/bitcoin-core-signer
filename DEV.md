@@ -1,0 +1,70 @@
+Build the static pages with Node.js and npm:
+
+```sh
+npm install
+npm run build
+```
+
+For automatic rebuilds while editing (Node.js 22 or newer):
+
+```sh
+npm run dev
+```
+
+This builds once, then watches templates, assets, and the build script for changes. Stop with Ctrl-C. It does not start a web server or refresh the browser automatically; reload the page after a rebuild.
+
+Serve `build/` as the root of a static web server, for example:
+
+```sh
+python3 -m http.server 8000 --directory build
+```
+
+Visit http://localhost:8000/. Routes use directory indexes, such as `/setup-devices/prepare/`, `/setup-devices/export/`, and `/setup-devices/inspect/`. A static server serves each route's `index.html`; no client-side router or Node.js runtime is needed. Links and assets are relative to each generated page, so the build can also be hosted under a subdirectory. Navigation explicitly includes `index.html`, so opening `build/index.html` directly also supports all step links. Static servers can still serve the equivalent clean directory URLs.
+
+Only generated HTML and assets are placed in `build/`. Handlebars and `node_modules/` are build-time dependencies and are not included.
+
+## Editing pages
+
+- Shared HTML shell and site navigation: `pages/templates/shared/layout.hbs`
+- Table of contents page: `pages/templates/index.hbs`
+- Backup step templates and ordered metadata: `pages/templates/setup-devices/`
+- Shared stylesheet: `pages/assets/style.css`
+- Build script and top-level table of contents entries: `scripts/build-pages.mjs`
+
+To add a backup step, add an entry to `pages/templates/setup-devices/steps.json` with a unique `slug`, `title`, and `description`. Create a matching `<slug>.hbs` file in that same directory:
+
+```handlebars
+{{#> layout}}
+{{> flow-header}}
+<section>
+  <h2>Your step heading</h2>
+  <p>Your instructions.</p>
+</section>
+{{> flow-navigation}}
+{{/layout}}
+```
+
+The build generates `/setup-devices/<slug>/index.html`. Step numbering and Back/Next links follow the order in `steps.json`. The first step links back to Contents; the last links back to Contents after completion.
+
+Run `npm run build` after editing. The build replaces the generated `build/` directory, so edit source templates rather than generated files.
+
+Existing `pages/index.html`, `pages/test.html`, and `pages/app.js` are preserved as original notes and are not included in the build.
+
+## Shared code blocks
+
+Use the `code-block` partial for shell, Python, or plain-text examples:
+
+```handlebars
+{{#> code-block}}echo "Hello"
+echo "World"{{/code-block}}
+```
+
+The defaults are `caption="Shell"` and `language="bash"`. Override them with `caption="Python" language="python"` for Python, or `caption="Text" language="text"` for plain text. Code blocks do not use IDs. Keep the first code character immediately after the opening partial call and the closing call immediately after the last code character; all whitespace inside the block is preserved. Escape HTML characters in the code (`&lt;`, `&gt;`, `&amp;`) as in ordinary HTML templates.
+
+The wrapper, accessible caption, and language class are defined once in `pages/templates/shared/code-block.hbs`.
+
+## Shared flows
+
+`pages/templates/shared/` contains the common layout, flow header, Back/Next navigation, code block, and IMPORTANT callout. Both flows use these partials.
+
+Recovery steps live in `pages/templates/recover-from-backup/`, with their order and titles in `steps.json`. Add a matching `.hbs` template for each step, using `flow-header` and `flow-navigation` just as in the backup flow. Both Contents lists and navigation update automatically. Recovery currently has one Recovery step linking to the relevant setup and wallet recovery instructions. More steps can be added to its steps.json without changing the build script.
