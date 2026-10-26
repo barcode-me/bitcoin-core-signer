@@ -1,0 +1,13 @@
+[
+  {
+    "slug": "intro",
+    "title": "Introduction to Bitcoin Core with BIP39",
+    "description": "Provide some context."
+  },
+  {
+    "slug": "sign-transaction",
+    "title": "Sign transaction on Bitcoin Core with BIP39",
+    "description": "How to sign a transaction in Bitcoin Core with BIP39."
+  }
+  
+]

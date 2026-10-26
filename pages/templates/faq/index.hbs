@@ -6,16 +6,17 @@
   <h2>Why one time pad encryption?</h2>
   <p>One-time pad encryption is extremely straight forward and it is considered unbreakable as long as the pad is truly random and it is used only once. The decryption algorithm is straightforward so anyone can write a script to do it with a google search or even by asking AI to write a script for it. The main reason to choose this encryption method is to maintain the same byte size of the original content and to avoid introducing libraries that might not be well maitained in the future or that the method becomes insecure in the future.</p>
   <p>The inconvenience of one-time pads is that they need to be as long as the data they are encrypting and since the secret keys we are encrypting are just 32 bytes long then the pad can be just the same length. Make sure to store the pad in hex format since it is a binary stream. The program that decrypts the one-time pads simply parses both hexes the pad and the encrypted content as a bytestream and runs a XOR operation per byte to obtain the decrypted bytestream. This can be done easily with python without introducing any libraries. </p>
-</section>
-
-<section class="example-section">
-  <h2>What if some one finds a backup?</h2>
-  <p>Since it is encrypted there is no immediate risk. However, if you know it has been seized by criminals, government officials, or simply anyone you don't trust then you should consider moving to a new multi-sig. You can stll continue to use the other keys, just create a new wallet where the compromised key is no longer in the quorum and add a new one. Make sure to properly test when you do this, the last thing you want is to mix backups and end up with a mess. If you are unsure it is better to start from scratch and get rid of the old backups.</p>
+  <p>The recommended approach is in this guide is to derive the one-time pad from a strong passphrase by running it against sha256 and use the 256 bits as the one time pad. This is for simplicity, but you can use any one-time pad generation method like using a KDF with enough iterations, that way you can use much smaller passphrases, ir simply using a random pad and storing it in a password manager.</p>
 </section>
 
 <section class="example-section">
   <h2>What if some keys are lost?</h2>
-  <p>Since it is encrypted there is no immediate risk. However, if you know it has been seized by criminals, government officials, or simply anyone you don't trust then you should consider moving to a new multi-sig. You can stll continue to use the other keys, just create a new wallet where the compromised key is no longer in the quorum and add a new one. Make sure to properly test when you do this, the last thing you want is to mix backups and end up with a mess. If you are unsure it is better to start from scratch and get rid of the old backups.</p>
+  <p>Since it is encrypted there is no immediate risk. However, if you know it has been seized by criminals, government officials, or simply anyone you don't trust then you should consider moving to a new wallet. Make sure to carefully replace the backups with the new ones.</p>
+</section>
+
+<section class="example-section">
+  <h2>What if some one finds a backup?</h2>
+  <p>Same as lost keys question.</p>
 </section>
 
 <section class="example-section">
@@ -46,5 +47,32 @@
   <h2>Why run USBGuard?</h2>
   <p>The laptop for the bitcoin dedicated device is very secure in the sense that the attack surface is minimum. The file system is encrypted with a strong passphrase, it is only running verified software and not much outside of the already existing software, you are running it in an isolated network via ethernet, and the usage is limited to bitcoin related operations with bitcoin core and python scripts without external libraries. This means no devices can reach it and so there is no way to deliver a payload to exploit the system other than through the limited attack surface inherit to the bitcion related operations we run. But then there is USB. All it takes is someone including yourself unknowingly connecting a malicious USB device and the whole system becomes compromised. With USBGuard all USB devices that have not been previously authorized are blocked by default so any attempt of introducing malware via BadUSB is impossible.</p>
   <p>It essentially protects against evil maid attacks, but you should still keep those devices properly isolated from people.</p>
+  <p>The offline computer doesn't need it because is all ephemeral and you should unplug everything other than temporarily the bootable USB.</p>
+</section>
+
+<section class="example-section">
+  <h2>Why not Electrs or X, Y, Z?</h2>
+  <p>You are free to do whatever you want. If you strongly feel you need that then who am I to block you. Having said that, you don't really need it. This guide is primarily aimed for regular people who use bitcoin as a store of value. If you do transact often in bitcoin then I would suggest you split your store of value wallet from your spending wallet which can be loaded on a separate device with all those fancy things you need. The goal is to minimize attack surface. Bitcoin core could have a critical vulnerability just like any software but reviews and testing is more torough in bitcoin core than in any other project. Also if you minimize the attack surface by not running additional software even if there is a vulnerability it is likely that there is no adversary capable of reaching the node in a way that can exploit such vulnerability. Whereas if you add more third parties you are more likely to be exposed.</p>
+</section>
+
+<section class="example-section">
+  <h2>Why laptops and not desktop computers?</h2>
+  <p>You can technically use a desktop device, but a laptop is a much better candidate with all integrated components already included. In short a laptop is portable, compact, has a battery, display, keyboard, trackpad, and even camera. No need to plug anything into it other than a USB drive to boot and then eject it.</p>
+  <p>You are more likely to spend more on a desktop computer when you account for all those things and you will need to make sure anything you connect to it hasn't been tampered with and it takes a lot more space to store all those components. Having said that, if you already have a desktop that fits the needs in this guide then go ahead and use that.</p>
+</section>
+
+<section class="example-section">
+  <h2>Why not a Raspberry Pi or Le Potato or X, Y, Z?</h2>
+  <p>Similar to the question about desktop computers. Also, complexity of software compatibility due to different architectures x86 vs ARM. If you already own those devices and you are able to strip out the wifi, bluetooth, and storage device components and you are able to find compatible bitcoin and python builds then go for it. This guide is not built for architectures other than x86 for Ubuntu and Alpine Linux, so you will need to do some digging. Also, an old laptop tucker in the corner attracts way less attention than those devices in case of theft.</p>
+</section>
+
+<section class="example-section">
+  <h2>What if someone tampers with the laptop?</h2>
+  <p>To mitigate this you can put it inside a locked box with some combination. You can also try to weight the device to ensure nothing has been changed in terms of hardware components.</p>
+</section>
+
+<section class="example-section">
+  <h2>Why transfer with SB58 instead of QR codes?</h2>
+  <p>First, not all devices have cameras, and the ones that do don't always have good quality cameras. Second, introducing more dependencies to support creating and scanning QR codes is something I prefer to avoid. For bitcoin transactions the byte data size to transfer is below 1KB and most commonly transactions are only a few hundred bytes resulting in SB58 transfer speeds of less than 5 minutes. While it might sound like a lot, you would be surprised how long it takes to align cameras on two laptops to perform a scan, specially if they have low quality cameras like lots of old laptops do. Even if you prefer to use USB for transfering which is not recommended in this guide, it still takes a few minutes to insert a USB, mount it, transfer files, eject it, physically eject it, move it to the other device, mount it and transfer files. It actually ends up taking roughly the same time. If you are a fast typer you won't have any problems transfering with SB58.</p>
 </section>
 {{/layout}}
