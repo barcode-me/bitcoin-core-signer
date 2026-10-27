@@ -166,6 +166,26 @@
     },
   });
 
+  // Sign the received PSBT with the Part 2 wallet and show the signed PSBT as SB58 lines for the online device
+  const signCell = document.querySelector('[data-script=sign-psbt]');
+  const signViewer = globalThis.SB58Viewer.setupViewer(signCell.querySelector('.sb58-viewer'));
+  const clearSign = setupCell(signCell, {
+    collect: () => {
+      if (!receivedPsbt) throw new Error('Type the SB58 lines from the online device above first.');
+      const name = wallet.value.trim();
+      if (!name) throw new Error('Enter the name of the wallet that signs in Part 2.');
+      const datadir = document.querySelector('#datadir').value.trim();
+      return { psbt: receivedPsbt, wallet: name, ...(datadir ? { datadir } : {}) };
+    },
+    show: signed => {
+      signViewer.show([...signed.lines, signed.final_checksum]);
+      return `Signed with wallet ${signed.wallet}. ${signed.lines.length + 1} lines: ${signed.lines.length} data lines and the final checksum. They encode the ${signed.bytes.toLocaleString('en-US')}-byte signed PSBT (${signed.base58_chars.toLocaleString('en-US')} Base58 characters).`;
+    },
+    clear: signViewer.clear,
+  });
+  // A different signing wallet needs a new signature.
+  wallet.addEventListener('input', clearSign);
+
   globalThis.SB58.setupEditor(document.querySelector('#psbt-receiver'), {
     decode: bytes => {
       if (psbtMagic.some((byte, index) => bytes[index] !== byte)) throw new Error('The lines check out but do not hold a PSBT. Check that these are the lines from Part 3 of the online device guide.');
@@ -176,10 +196,11 @@
     show: psbt => ({ text: psbt, status: 'Received the transaction. The final checksum matches.' }),
     onChange: psbt => {
       receivedPsbt = psbt;
+      clearSign();
       // Show the details as soon as the transaction is received.
       if (psbt) psbtCell.querySelector('[data-action=run]').click(); else clearPsbt();
     },
   });
   // Every part runs bitcoin-cli with the data directory at the top, so a new one makes their results stale.
-  clearOnEdit(document.querySelector('#datadir-form'), () => { clearDelete(); clearImport(); clearPsbt(); });
+  clearOnEdit(document.querySelector('#datadir-form'), () => { clearDelete(); clearImport(); clearPsbt(); clearSign(); });
 })();

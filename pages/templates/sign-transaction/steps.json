@@ -24,6 +24,7 @@
       "importDescriptors": "python/import-descriptors.py",
       "descriptorsToSb58": "python/descriptors-to-sb58.py",
       "decodePsbt": "python/decode-psbt.py",
+      "signPsbt": "python/sign-psbt.py",
       "deleteWallet": "python/delete-wallet.py"
     }
   }

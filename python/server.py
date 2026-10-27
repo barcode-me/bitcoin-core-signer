@@ -55,6 +55,11 @@ SCRIPTS = {
         "required": {"psbt"},
         "optional": {"wallet", "datadir"},
     },
+    "sign-psbt": {
+        "function": "sign_psbt",
+        "required": {"psbt", "wallet"},
+        "optional": {"datadir"},
+    },
     "import-descriptors": {
         "function": "import_descriptors",
         "required": {"wallet", "requests"},

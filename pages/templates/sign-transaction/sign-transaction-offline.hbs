@@ -249,6 +249,32 @@ pip3 install -r python/requirements.txt{{/code-block}}
   </div>
   <p>To run it yourself, save the code as <code>decode-psbt.py</code> and run it with the environment above active. It reads the PSBT in base64 from standard input:</p>
   {{#> code-block}}python3 decode-psbt.py --wallet my-wallet --datadir /YOUR/DRIVE{{/code-block}}
+
+  <h3>Sign the transaction</h3>
+  <p>When every address and amount above is what you intended, sign the transaction with the wallet named in Part 2. Bitcoin Core signs and finalizes it with <code>walletprocesspsbt</code>. The signed PSBT is then written as Super Base 58 lines to type on the online device, which sends it. If the wallet cannot sign every input, nothing is shown.</p>
+  <div class="notebook-cell" data-script="sign-psbt">
+    <div class="notebook-toolbar">
+      <button type="button" class="run-button" data-action="run">&#9654; Sign transaction</button>
+      <button type="button" data-action="copy-code">Copy code</button>
+      <span class="run-status" role="status"></span>
+    </div>
+    {{#> code-block caption="Python" language="python"}}{{scripts.signPsbt}}{{/code-block}}
+    <div class="notebook-output" hidden aria-live="polite">
+      <p class="notebook-output-label">Output</p>
+      <pre class="result" tabindex="0"></pre>
+      <div class="sb58-viewer" tabindex="0" hidden aria-label="Super Base 58 lines to type on the online device">
+        <div class="sb58-header">
+          <p class="sb58-progress" aria-live="polite"></p>
+          <button type="button" data-action="copy-lines">Copy lines</button>
+          <span class="sb58-copy-status" role="status"></span>
+        </div>
+        <ol class="sb58-lines"></ol>
+        <p class="sb58-help">Click here, then press <kbd>Enter</kbd> to move to the next line, <kbd>Shift</kbd>+<kbd>Enter</kbd> to go back. Type each line on the online device, then the final checksum last.</p>
+      </div>
+    </div>
+  </div>
+  <p>To run it yourself, save the code as <code>sign-psbt.py</code> and run it with the environment above active. It reads the PSBT in base64 from standard input:</p>
+  {{#> code-block}}python3 sign-psbt.py --wallet my-wallet --datadir /YOUR/DRIVE{{/code-block}}
   </section>
 
   <noscript>Running the scripts on this page needs JavaScript enabled. You can copy the code and run it yourself.</noscript>
