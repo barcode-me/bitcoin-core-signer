@@ -1,0 +1,196 @@
+{{#> layout}}
+{{> flow-header}}
+
+<section class="example-section">
+  {{#> important-callout}}
+  ONLY USE THIS ON YOUR SECURE OFFLINE DEVICE. These scripts print your seed phrase and private descriptors to the terminal.
+  {{/important-callout}}
+
+  <p>This is a shorter version of the offline device flow. There is no page server or script server: you run three Python scripts in a terminal, one after the other, and copy each result into the next one.</p>
+  <p>First, from the project folder, create a Python environment and install the dependencies in <code>python/requirements.txt</code> (this includes <code>embit</code>). Installing needs internet access, so do it before you go offline.</p>
+  {{#> code-block}}python3 -m venv python/venv
+source python/venv/bin/activate
+pip3 install -r python/requirements.txt{{/code-block}}
+  <p>Run every command below from the project folder with this environment active. Use <code>--words 24</code> instead of <code>--words 12</code> in each command if your seed phrase has 24 words.</p>
+
+  <section class="part">
+  <h2>Step 1: Convert the decimal backup to hex <span class="device-tag is-offline">ON OFFLINE DEVICE</span></h2>
+  <p>Enter your encrypted backup as a decimal number. Spaces between digit groups are ignored. The script prints the backup as 33 hex characters for 12 words or 66 for 24 words, in groups of two.</p>
+  {{#> code-block}}python3 python/lean/decimal-to-hex.py --words 12{{/code-block}}
+  <p>If your backup is already written in hex, skip this step.</p>
+  </section>
+
+  <section class="part">
+  <h2>Step 2: Decrypt the backup into a seed phrase <span class="device-tag is-offline">ON OFFLINE DEVICE</span></h2>
+  <p>Enter the hex backup from Step 1 <strong>without the spaces</strong>, then the passphrase to generate a one-time pad. The script prints your seed phrase. If it prints <code>no match</code> and two rows of bits instead, try again you likely miss typed something.</p>
+  {{#> code-block}}python3 python/lean/decrypt-backup.py --words 12{{/code-block}}
+  </section>
+
+  <section class="part">
+  <h2>Step 3: Derive the Bitcoin Core descriptors <span class="device-tag is-offline">ON OFFLINE DEVICE</span></h2>
+  <p>Enter the seed phrase from Step 2 and your BIP39 passphrase. Both are hidden as you type; add <code>--show-input</code> to see them. The script prints the master fingerprint with and without the passphrase. Compare them with the fingerprints in your records before you import anything.</p>
+  {{#> code-block}}python3 python/lean/convert-bip39-to-core.py --bitcoin-core --wallet my-wallet{{/code-block}}
+  <p>With <code>--bitcoin-core</code> it prints a <code>bitcoin-cli importdescriptors</code> command for the wallet named with <code>--wallet</code>. Leave it out to print the receive and change descriptors of each address type instead, and add <code>--type native-segwit</code> (or <code>legacy</code>, <code>nested-segwit</code>, <code>taproot</code>) to derive only one address type.</p>
+  </section>
+
+  <section class="part">
+  <h2>Step 4: Import the private descriptors into Bitcoin Core <span class="device-tag is-offline">ON OFFLINE DEVICE</span></h2>
+  <p>Bitcoin Core must be running on this device, for example with <code>bitcoind -daemon</code>. Create a blank wallet with the same name you passed to <code>--wallet</code> in Step 3, if it does not exist yet:</p>
+  {{#> code-block}}bitcoin-cli -named createwallet wallet_name=my-wallet blank=true{{/code-block}}
+  <p>Then paste the whole <code>bitcoin-cli -rpcwallet=my-wallet importdescriptors '[ … ]'</code> command that Step 3 printed into the terminal and run it. Bitcoin Core prints <code>"success": true</code> for each descriptor.</p>
+  <p>The command holds your private keys. The shell saves it in its history, so clear it afterwards with <code>history -c</code>. The wallet is not encrypted, so protect the device.</p>
+  </section>
+
+  <h2>Optional: Set up the wallet on the online device</h2>
+  <p>Steps 5, 6 and 7 send the public descriptors of this wallet to the online device, so it can watch your addresses and create transactions for this device to sign. If the online device already has them, skip these steps. If it does not, open the section below and follow them.</p>
+
+  <details class="optional-steps">
+  <summary>Steps 5 to 7: Send the public descriptors to the online device</summary>
+
+  <section class="part">
+  <h2>Step 5: Make the import command for the online device <span class="device-tag is-offline">ON OFFLINE DEVICE</span></h2>
+  <p>List the wallet's public descriptors. Without <code>true</code> at the end, <code>listdescriptors</code> prints only public keys, never private ones:</p>
+  {{#> code-block}}bitcoin-cli -rpcwallet=my-wallet listdescriptors{{/code-block}}
+  <p>Paste the whole output below. The page turns it into the command that imports these descriptors into the wallet on the online device. Nothing is sent anywhere. It refuses any private descriptor.</p>
+
+  <form id="lean-import-form" class="phonetic-form" autocomplete="off" novalidate>
+    <div class="phonetic-field">
+      <label for="listdescriptors-output">Output of listdescriptors</label>
+      <textarea id="listdescriptors-output" rows="10" wrap="off" spellcheck="false" autocomplete="off" autocapitalize="off"></textarea>
+    </div>
+  </form>
+
+  <div id="lean-import-output" hidden aria-live="polite">
+    <p class="lean-command-error" role="alert" hidden></p>
+    <div class="lean-command" hidden>
+      <div class="notebook-toolbar">
+        <button type="button" data-action="copy-result">Copy command</button>
+        <span class="run-status" role="status"></span>
+      </div>
+      {{#> code-block}}{{/code-block}}
+    </div>
+  </div>
+  </section>
+
+  <section class="part">
+  <h2>Step 6: Send the import command to the online device as QR codes <span class="device-tag is-offline">ON OFFLINE DEVICE</span></h2>
+  <p>Copy the import command from Step 5, then run <code>qr-encode.py</code> without a file so it reads standard input. Paste the command, press <kbd>Enter</kbd>, then <kbd>Ctrl</kbd>+<kbd>D</kbd>:</p>
+  {{#> code-block}}python3 python/lean/qr-encode.py{{/code-block}}
+  <p>A window shows the QR codes one after another, looping, with each code's number under it. Press <kbd>Space</kbd> to pause and <kbd>q</kbd> or <kbd>Esc</kbd> to stop. Add <code>--interval 2</code> to show each code for 2 seconds if the camera is slow. The codes are not encrypted. That is fine here, because they hold only public descriptors.</p>
+  </section>
+
+  <section class="part">
+  <h2>Step 7: Import the descriptors on the online device <span class="device-tag">ON ONLINE DEVICE</span></h2>
+  <p>Run the rest of this step on the <strong>online device</strong>, from the project folder with the Python environment active. Bitcoin Core must be running.</p>
+  <p>First create an empty watch-only wallet. It has no private keys, so it can watch your addresses and create transactions but never sign them. Use the same wallet name as in the import command:</p>
+  {{#> code-block}}bitcoin-cli -named createwallet wallet_name=my-wallet disable_private_keys=true blank=true{{/code-block}}
+  <p>Then scan the QR codes shown in Step 6. Hold the camera to the offline device's screen until every code is read, in any order. The script checks the joined data and writes it to a file:</p>
+  {{#> code-block}}python3 python/lean/qr-scan.py --out import-descriptors.sh{{/code-block}}
+
+  {{#> important-callout}}
+  Do not run the scanned file before you read it. Anyone who can show a QR code to this camera can put any command in it, and running it runs that command.
+  {{/important-callout}}
+  {{#> code-block}}cat import-descriptors.sh{{/code-block}}
+  <p>Check that:</p>
+  <ul>
+    <li>It is a single <code>bitcoin-cli -rpcwallet=my-wallet importdescriptors '[ … ]'</code> command, with nothing before it and nothing after the closing <code>]'</code>.</li>
+    <li>Every descriptor holds an <code>xpub</code> (<code>tpub</code> on test networks), never an <code>xprv</code> or <code>tprv</code>.</li>
+    <li>The master fingerprint in each <code>[…]</code> matches the one in your records and in Step 3.</li>
+    <li>The checksum after each <code>#</code> matches the one in the <code>listdescriptors</code> output from Step 5.</li>
+  </ul>
+  <p>Only when all of this is true, run it:</p>
+  {{#> code-block}}sh import-descriptors.sh{{/code-block}}
+  <p>Bitcoin Core prints <code>"success": true</code> for each descriptor. The wallet then rescans the blockchain from the time in each descriptor, which can take a while.</p>
+  </section>
+  </details>
+
+  <h2>Create transaction</h2>
+  <p>With the wallet in Bitcoin Core on both devices, the online device creates the transaction and this device signs it.</p>
+
+  <section class="part">
+  <h2>Step 8: Create the unsigned transaction (PSBT) <span class="device-tag">ON ONLINE DEVICE</span></h2>
+  <p>Enter where to send the bitcoin and how much. The page writes the <code>walletcreatefundedpsbt</code> command with them, ready to copy and paste into the terminal on the online device. Bitcoin Core picks the coins to spend and sends any change back to the wallet. Nothing is signed or sent.</p>
+
+  <form id="lean-psbt-form" class="phonetic-form" autocomplete="off" novalidate>
+    <div class="phonetic-field">
+      <label for="psbt-wallet">Wallet name</label>
+      <input id="psbt-wallet" value="my-wallet" spellcheck="false" autocomplete="off" autocapitalize="off">
+    </div>
+    <div class="phonetic-field">
+      <label for="psbt-address">Destination address</label>
+      <input id="psbt-address" spellcheck="false" autocomplete="off" autocapitalize="off">
+    </div>
+    <div class="phonetic-field">
+      <label for="psbt-amount">Amount in BTC</label>
+      <input id="psbt-amount" inputmode="decimal" placeholder="0.001" spellcheck="false" autocomplete="off">
+    </div>
+    <div class="phonetic-field">
+      <label for="psbt-fee-rate">Fee rate in sat/vB (optional)</label>
+      <input id="psbt-fee-rate" inputmode="decimal" placeholder="Bitcoin Core's estimate" spellcheck="false" autocomplete="off">
+    </div>
+  </form>
+
+  <div id="lean-psbt-output" hidden aria-live="polite">
+    <p class="lean-command-error" role="alert" hidden></p>
+    <div class="lean-command" hidden>
+      <div class="notebook-toolbar">
+        <button type="button" data-action="copy-result">Copy command</button>
+        <span class="run-status" role="status"></span>
+      </div>
+      {{#> code-block}}{{/code-block}}
+    </div>
+  </div>
+  <p>The fee is paid on top of the amount. Without a fee rate, Bitcoin Core estimates one. The command takes the unsigned transaction in base64 out of Bitcoin Core's answer with <code>jq</code> and saves it to <code>~/Desktop/unsigned.psbt</code>, replacing any file of that name. Install <code>jq</code> first if it is missing, for example with <code>sudo apt install jq</code>.</p>
+  </section>
+
+  <section class="part">
+  <h2>Step 9: Send the unsigned transaction to the offline device as QR codes <span class="device-tag">ON ONLINE DEVICE</span></h2>
+  <p>Show the PSBT file from Step 8 as QR codes, from the project folder with the Python environment active:</p>
+  {{#> code-block}}python3 python/lean/qr-encode.py ~/Desktop/unsigned.psbt{{/code-block}}
+  <p>The script prints how many QR codes it made. If it says <code>No data to encode</code>, the file is empty because the command in Step 8 failed; read its error and run it again. A window shows the codes one after another, looping, with each code's number under it. Press <kbd>Space</kbd> to pause and <kbd>q</kbd> or <kbd>Esc</kbd> to stop. Add <code>--interval 2</code> to show each code for 2 seconds if the camera is slow. The codes are not encrypted. The transaction holds no private keys, but anyone who sees them learns its addresses and amounts.</p>
+  </section>
+
+  <section class="part">
+  <h2>Step 10: Scan the unsigned transaction <span class="device-tag is-offline">ON OFFLINE DEVICE</span></h2>
+  <p>Scan the QR codes shown in Step 9, from the project folder with the Python environment active. Hold the camera to the online device's screen until every code is read, in any order. The window shows how many have been read. The script checks the joined data and saves it to <code>~/Desktop/unsigned.psbt</code> on this device, replacing any file of that name:</p>
+  {{#> code-block}}python3 python/lean/qr-scan.py --out ~/Desktop/unsigned.psbt{{/code-block}}
+  <p>It prints how many bytes it wrote. If it says the scanned data does not match its id, run it again. Press <kbd>q</kbd> or <kbd>Esc</kbd> in the window to stop scanning. Add <code>--camera 1</code> if the device has more than one camera and the wrong one opens.</p>
+  </section>
+
+  <section class="part">
+  <h2>Step 11: Sign the transaction <span class="device-tag is-offline">ON OFFLINE DEVICE</span></h2>
+  <p>Before you sign, read what the transaction does:</p>
+  {{#> code-block}}cat ~/Desktop/unsigned.psbt | bitcoin-cli -stdin decodepsbt{{/code-block}}
+  <p><strong>Check every address and amount before you sign.</strong> Compare the destination address in <code>tx.vout</code> with the one you meant to pay, character by character, and check the amount and the <code>fee</code>.</p>
+  <p>Then sign it with the wallet from Step 4. If Bitcoin Core was restarted since then, load the wallet first with <code>bitcoin-cli loadwallet my-wallet</code>. The command takes the signed transaction in base64 out of Bitcoin Core's answer with <code>jq</code> and saves it to <code>~/Desktop/signed.psbt</code>:</p>
+  {{#> code-block}}cat ~/Desktop/unsigned.psbt | bitcoin-cli -rpcwallet=my-wallet -stdin walletprocesspsbt | jq -r '.psbt' > ~/Desktop/signed.psbt{{/code-block}}
+  <p>To make sure every input was signed, run the command below. It should show <code>"next": "finalizer"</code>. If it shows <code>"signer"</code>, this wallet could not sign every input; check that the wallet name and the descriptors are right.</p>
+  {{#> code-block}}cat ~/Desktop/signed.psbt | bitcoin-cli -stdin analyzepsbt{{/code-block}}
+  </section>
+
+  <section class="part">
+  <h2>Step 12: Send the signed transaction to the online device as QR codes <span class="device-tag is-offline">ON OFFLINE DEVICE</span></h2>
+  <p>Show the signed PSBT from Step 11 as QR codes, from the project folder with the Python environment active:</p>
+  {{#> code-block}}python3 python/lean/qr-encode.py ~/Desktop/signed.psbt{{/code-block}}
+  <p>If it says <code>No data to encode</code>, the file is empty because signing in Step 11 failed; read its error and sign again. A window shows the codes one after another, looping. Press <kbd>Space</kbd> to pause and <kbd>q</kbd> or <kbd>Esc</kbd> to stop. Add <code>--interval 2</code> if the camera is slow. The signed transaction holds signatures but no private keys, so it cannot be used to spend anything else.</p>
+  </section>
+
+  <section class="part">
+  <h2>Step 13: Scan the signed transaction <span class="device-tag">ON ONLINE DEVICE</span></h2>
+  <p>Scan the QR codes shown in Step 12, from the project folder with the Python environment active. Hold the camera to the offline device's screen until every code is read, in any order. The script checks the joined data and saves it to <code>~/Desktop/signed.psbt</code> on this device:</p>
+  {{#> code-block}}python3 python/lean/qr-scan.py --out ~/Desktop/signed.psbt{{/code-block}}
+  <p>If it says the scanned data does not match its id, run it again.</p>
+  </section>
+
+  <section class="part">
+  <h2>Step 14: Broadcast the transaction <span class="device-tag">ON ONLINE DEVICE</span></h2>
+  <p>Read the signed transaction once more and check that the destination address, the amount and the fee are the ones you created in Step 8:</p>
+  {{#> code-block}}cat ~/Desktop/signed.psbt | bitcoin-cli -stdin decodepsbt{{/code-block}}
+  <p>Then finalize it into a raw transaction and send it to the Bitcoin network. <strong>This cannot be undone.</strong></p>
+  {{#> code-block}}cat ~/Desktop/signed.psbt | bitcoin-cli -stdin finalizepsbt | jq -r '.hex' | bitcoin-cli -stdin sendrawtransaction{{/code-block}}
+  <p>Bitcoin Core prints the transaction ID. Look it up in a block explorer, or wait for it to appear in the wallet with <code>bitcoin-cli -rpcwallet=my-wallet listtransactions</code>. If <code>finalizepsbt</code> cannot finalize the transaction because a signature is missing, its answer has no <code>hex</code>, so <code>jq</code> passes on <code>null</code> and <code>sendrawtransaction</code> fails with a decode error. Nothing is sent; sign it again in Step 11.</p>
+  </section>
+</section>
+<script src="{{assetsHref}}/lean-flow.js" defer></script>
+{{> flow-navigation}}
+{{/layout}}

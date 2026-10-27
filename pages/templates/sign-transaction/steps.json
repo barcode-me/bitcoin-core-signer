@@ -5,6 +5,11 @@
     "description": "Provide some context."
   },
   {
+    "slug": "lean-flow",
+    "title": "Lean flow",
+    "description": "Offline device flow with only terminal scripts"
+  },
+  {
     "slug": "sign-transaction-online",
     "title": "Sign transaction Online Device",
     "description": "Online device flow",

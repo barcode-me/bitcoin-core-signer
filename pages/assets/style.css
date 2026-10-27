@@ -135,6 +135,7 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fo
 .sb58-errors { margin: 0 0 16px; padding: 0; list-style: none; }
 .sb58-errors:empty { display: none; }
 .sb58-errors li { margin: 0 0 6px; padding: 8px 12px; border-left: 4px solid #a22d20; background: #fbeceb; color: #6e1d14; font-size: 14px; cursor: pointer; }
+.lean-command-error { margin: 0 0 16px; padding: 8px 12px; border-left: 4px solid #a22d20; background: #fbeceb; color: #6e1d14; font-size: 14px; }
 .sb58-result pre { margin: 0 0 12px; padding: 14px 16px; border: 1px solid #cbd1c3; border-left: 4px solid #456850; border-radius: 6px; background: #fff; white-space: pre-wrap; overflow-wrap: anywhere; font: 14px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
 .sb58-result button { cursor: pointer; padding: 8px 14px; border: 1px solid #a4b29e; border-radius: 5px; background: #e8ecdf; color: #233f2a; font: inherit; font-size: 14px; }
 .sb58-result button:hover { background: #d7e0ce; }
@@ -169,6 +170,11 @@ kbd { padding: .1em .4em; border: 1px solid #a4b29e; border-bottom-width: 2px; b
 .danger-zone { margin: 8px 0 20px; padding: 0 16px; border: 1px solid #d9b1ab; border-left: 5px solid #a22d20; border-radius: 6px; background: #fdf6f5; }
 .danger-zone > summary { padding: 12px 0; cursor: pointer; font-weight: 600; color: #7a2118; }
 .danger-zone[open] > summary { border-bottom: 1px solid #ecd2ce; margin-bottom: 14px; }
+.optional-steps { margin: 8px 0 20px; padding: 0 16px; border: 1px solid #cbd1c3; border-left: 5px solid #456850; border-radius: 6px; background: #f5f6f0; }
+.optional-steps > summary { padding: 12px 0; cursor: pointer; font-weight: 600; color: #233f2a; }
+.optional-steps[open] > summary { border-bottom: 1px solid #e1e4da; }
+.device-tag { display: inline-block; margin-left: 10px; padding: 3px 8px; border-radius: 4px; background: #304632; color: #fff; font-size: 11px; font-weight: 600; letter-spacing: .08em; vertical-align: middle; }
+.device-tag.is-offline { background: #a22d20; }
 .notebook-toolbar .danger-button { background: #a22d20; border-color: #a22d20; color: #fff; }
 .notebook-toolbar .danger-button:hover:not(:disabled) { background: #861f14; }
 .sb58-header { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin: 0 0 10px; }
