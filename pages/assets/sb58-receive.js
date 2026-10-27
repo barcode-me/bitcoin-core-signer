@@ -1,5 +1,4 @@
-/* Receives data typed as Super Base 58 (SB58), such as the public descriptors from python/offline/descriptors-to-sb58.py,
-   and encodes bytes as SB58 lines for the Super Base 58 page. Input stays on this page. */
+/* Encodes bytes as Super Base 58 (SB58) lines, and receives data typed as SB58 lines. Input stays on this page. */
 (() => {
   const base58 = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
   const letterWords = {
@@ -16,7 +15,6 @@
   const listOf = items => items.length < 2 ? items.join('') : `${items.slice(0, -1).join(', ')} or ${items.at(-1)}`;
   const charWord = char => /\d/.test(char) ? digitWords[Number(char) - 1] : letterWords[char.toLowerCase()];
   const checksumChar = chars => base58[[...chars].reduce((sum, char) => sum + base58.indexOf(char), 0) % 58];
-  const checksumWord = chars => charWord(checksumChar(chars));
 
   // A word can be completed from its first letters when only one word starts with them.
   function completeWord(token) {
@@ -118,18 +116,6 @@
     return new Uint8Array(bytes);
   }
 
-  // Address types in bit order, as in python/offline/descriptors-to-sb58.py.
-  const scriptTypes = [
-    { bit: 1, wrap: key => `pkh(${key})`, purpose: '44h' },
-    { bit: 2, wrap: key => `sh(wpkh(${key}))`, purpose: '49h' },
-    { bit: 4, wrap: key => `wpkh(${key})`, purpose: '84h' },
-    { bit: 8, wrap: key => `tr(${key})`, purpose: '86h' },
-  ];
-  const xpubLength = 78;
-  // xpub version -> BIP44 coin type: mainnet xpub, or tpub on every test network
-  const coinTypes = { '0488b21e': '0h', '043587cf': '1h' };
-  const hex = bytes => [...bytes].map(byte => byte.toString(16).padStart(2, '0')).join('');
-
   function base58Encode(bytes) {
     let number = 0n;
     for (const byte of bytes) number = number * 256n + BigInt(byte);
@@ -139,7 +125,7 @@
     return encoded;
   }
 
-  // The lines to type for bytes, as python/offline/descriptors-to-sb58.py writes them, followed by the final checksum.
+  // The lines to type for bytes: 4 Base58 characters per line as words, a casing string and a checksum word, then the final checksum.
   async function encodeLines(bytes) {
     const encoded = base58Encode(bytes);
     const rows = [];
@@ -151,62 +137,6 @@
       rows.push(`${[...chunk].map(charWord).join(' ')} ${casing} ${charWord(check)}`);
     }
     return [...rows, await finalChecksum(rows)];
-  }
-
-  // Adds the 4-byte double SHA-256 checksum to the 78 xpub bytes.
-  async function xpubString(bytes) {
-    const hash = async data => new Uint8Array(await crypto.subtle.digest('SHA-256', data));
-    const check = (await hash(await hash(bytes))).slice(0, 4);
-    return base58Encode(new Uint8Array([...bytes, ...check]));
-  }
-
-  // The descriptor checksum from Bitcoin Core's descriptor.cpp (BIP 380).
-  const checksumInput = '0123456789()[],\'/*abcdefgh@:$%{}IJKLMNOPQRSTUVWXYZ&+-.;<=>?!^_|~ijklmnopqrstuvwxyzABCDEFGH`#"\\ ';
-  const checksumChars = 'qpzry9x8gf2tvdw0s3jn54khce6mua7l';
-  const generators = [0xf5dee51989n, 0xa9fdca3312n, 0x1bab10e32dn, 0x3706b1677an, 0x644d626ffdn];
-  function descriptorChecksum(descriptor) {
-    const polymod = (c, value) => {
-      const top = c >> 35n;
-      c = ((c & 0x7ffffffffn) << 5n) ^ BigInt(value);
-      generators.forEach((generator, bit) => { if ((top >> BigInt(bit)) & 1n) c ^= generator; });
-      return c;
-    };
-    let c = 1n, cls = 0, count = 0;
-    for (const char of descriptor) {
-      const position = checksumInput.indexOf(char);
-      c = polymod(c, position & 31);
-      cls = cls * 3 + (position >> 5);
-      if (++count === 3) { c = polymod(c, cls); cls = 0; count = 0; }
-    }
-    if (count) c = polymod(c, cls);
-    for (let i = 0; i < 8; i++) c = polymod(c, 0);
-    c ^= 1n;
-    return Array.from({ length: 8 }, (_, i) => checksumChars[Number((c >> BigInt(5 * (7 - i))) & 31n)]).join('');
-  }
-
-  // Bytes: [master fingerprint: 4][address type bits: 1][xpub: 78 per type]. Each type gets a receive (/0/*) and change (/1/*) descriptor.
-  async function rebuildDescriptors(data) {
-    const bits = data[4];
-    const types = scriptTypes.filter(type => bits & type.bit);
-    if (data.length < 5 || !types.length || bits & ~15 || data.length !== 5 + types.length * xpubLength) {
-      throw new Error('The data checks out but is not a set of public descriptors.');
-    }
-    const origin = hex(data.slice(0, 4));
-    const descriptors = [];
-    const version = hex(data.slice(5, 9));
-    for (const [index, type] of types.entries()) {
-      const key = data.slice(5 + index * xpubLength, 5 + (index + 1) * xpubLength);
-      // xpub or tpub version (the same for every key), depth 3, account 0h, compressed public key.
-      if (!coinTypes[version] || hex(key.slice(0, 4)) !== version || key[4] !== 3 || hex(key.slice(9, 13)) !== '80000000' || ![2, 3].includes(key[45])) {
-        throw new Error('The data checks out but does not hold account xpubs of one network.');
-      }
-      const xpub = await xpubString(key);
-      for (const branch of [0, 1]) {
-        const descriptor = type.wrap(`[${origin}/${type.purpose}/${coinTypes[version]}/0h]${xpub}/${branch}/*`);
-        descriptors.push(`${descriptor}#${descriptorChecksum(descriptor)}`);
-      }
-    }
-    return descriptors;
   }
 
   // An editor is a container holding a .sb58-input textarea, .sb58-gutter, .sb58-hint, .sb58-status, .sb58-errors,
@@ -332,5 +262,5 @@
     update();
   }
 
-  globalThis.SB58 = { completeWord, checkLines, recover, encodeLines, checksumWord, rebuildDescriptors, setupEditor };
+  globalThis.SB58 = { completeWord, checkLines, recover, encodeLines, setupEditor };
 })();

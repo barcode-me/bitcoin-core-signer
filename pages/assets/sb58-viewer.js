@@ -1,14 +1,13 @@
 /* Shows Super Base 58 (SB58) lines one at a time, to type on the other device. Shared by the pages that send SB58. */
 (() => {
-  // Pages without the local server, such as the Super Base 58 page, do not load notebook.js.
-  const copyText = globalThis.Notebook?.copyText ?? (async (text, status) => {
+  async function copyText(text, status) {
     try {
       await navigator.clipboard.writeText(text);
       status.textContent = 'Copied.';
     } catch {
       status.textContent = 'Copy failed. Select the lines and copy them manually.';
     }
-  });
+  }
 
   // viewer is a .sb58-viewer with .sb58-progress, .sb58-lines, a Copy lines button and .sb58-copy-status.
   function setupViewer(viewer) {

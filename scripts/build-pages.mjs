@@ -35,19 +35,7 @@ Handlebars.registerPartial('code-block', await readFile(join(templates, 'shared/
 Handlebars.registerPartial('important-callout', await readFile(join(templates, 'shared/important-callout.hbs'), 'utf8'));
 Handlebars.registerPartial('flow-header', await readFile(join(templates, 'shared/flow-header.hbs'), 'utf8'));
 Handlebars.registerPartial('flow-navigation', await readFile(join(templates, 'shared/flow-navigation.hbs'), 'utf8'));
-Handlebars.registerPartial('node-settings', await readFile(join(templates, 'shared/node-settings.hbs'), 'utf8'));
-Handlebars.registerPartial('server-token', await readFile(join(templates, 'shared/server-token.hbs'), 'utf8'));
-Handlebars.registerPartial('qr-passphrase', await readFile(join(templates, 'shared/qr-passphrase.hbs'), 'utf8'));
-Handlebars.registerPartial('transfer-mode', await readFile(join(templates, 'shared/transfer-mode.hbs'), 'utf8'));
-Handlebars.registerPartial('qr-viewer', await readFile(join(templates, 'shared/qr-viewer.hbs'), 'utf8'));
-Handlebars.registerPartial('qr-scanner', await readFile(join(templates, 'shared/qr-scanner.hbs'), 'utf8'));
 const rendered = [];
-// Python files a step shows and runs, read once so the page and the script cannot drift apart.
-async function readScripts(step) {
-  return Object.fromEntries(await Promise.all(Object.entries(step.scripts ?? {}).map(
-    async ([name, file]) => [name, (await readFile(join(root, file), 'utf8')).trimEnd()],
-  )));
-}
 async function renderPage(template, filename, context = {}) {
   const render = Handlebars.compile(await readFile(join(templates, template), 'utf8'), { preventIndent: true });
   // Resolve site routes from this output page, not from the web server root.
@@ -93,7 +81,6 @@ for (const section of sections) {
     description: step.description,
     stepTitle: step.title,
     stepNumber: step.number,
-    scripts: await readScripts(step),
     stepCount: steps.length,
     steps: steps.map(item => ({ ...item, isCurrent: item.slug === step.slug })),
     previous: index ? steps[index - 1] : { href: '/', title: 'Contents' },

@@ -8,32 +8,5 @@
     "slug": "lean-flow",
     "title": "Lean flow",
     "description": "Offline device flow with only terminal scripts"
-  },
-  {
-    "slug": "sign-transaction-online",
-    "title": "Sign transaction Online Device",
-    "description": "Online device flow",
-    "scripts": {
-      "listPublicDescriptors": "python/online/list-public-descriptors.py",
-      "importPublicDescriptors": "python/online/import-public-descriptors.py",
-      "createPsbt": "python/online/create-psbt.py",
-      "addSignatures": "python/online/add-signatures.py",
-      "decodePsbt": "python/shared/decode-psbt.py",
-      "sendPsbt": "python/online/send-psbt.py"
-    }
-  },
-  {
-    "slug": "sign-transaction-offline",
-    "title": "Sign transaction Offline Device",
-    "description": "Offline device flow",
-    "scripts": {
-      "decryptBackup": "python/offline/decrypt-backup-to-bip39.py",
-      "convertBip39ToCore": "python/offline/convert-bip39-to-core.py",
-      "importDescriptors": "python/offline/import-descriptors.py",
-      "descriptorsToSb58": "python/offline/descriptors-to-sb58.py",
-      "decodePsbt": "python/shared/decode-psbt.py",
-      "signPsbt": "python/offline/sign-psbt.py",
-      "deleteWallet": "python/offline/delete-wallet.py"
-    }
   }
 ]

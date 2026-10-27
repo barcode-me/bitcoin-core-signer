@@ -1,5 +1,4 @@
 embit==0.8.0
-# Encrypted QR codes: qr-encode.py makes them, qr-scan.py reads them with the camera
+# QR codes: python/lean/qr-encode.py makes them, python/lean/qr-scan.py reads them with the camera
 qrcode[pil]==8.2
 opencv-python==5.0.0.93
-cryptography==50.0.2

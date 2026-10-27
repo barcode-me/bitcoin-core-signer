@@ -76,8 +76,7 @@
     return `bitcoin-cli -rpcwallet=${shellWord(wallet)} importdescriptors ${shellQuote(json)}`;
   });
 
-  // Same limits as python/online/create-psbt.py. Numbers are checked as text and written as typed,
-  // so the amount is never rounded by a float.
+  // Numbers are checked as text and written as typed, so the amount is never rounded by a float.
   const wallet = document.querySelector('#psbt-wallet');
   const address = document.querySelector('#psbt-address');
   const amount = document.querySelector('#psbt-amount');
