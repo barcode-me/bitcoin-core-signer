@@ -9,12 +9,12 @@
     "title": "Sign transaction Online Device",
     "description": "Online device flow",
     "scripts": {
-      "listPublicDescriptors": "python/list-public-descriptors.py",
-      "importPublicDescriptors": "python/import-public-descriptors.py",
-      "createPsbt": "python/create-psbt.py",
-      "addSignatures": "python/add-signatures.py",
-      "decodePsbt": "python/decode-psbt.py",
-      "sendPsbt": "python/send-psbt.py"
+      "listPublicDescriptors": "python/online/list-public-descriptors.py",
+      "importPublicDescriptors": "python/online/import-public-descriptors.py",
+      "createPsbt": "python/online/create-psbt.py",
+      "addSignatures": "python/online/add-signatures.py",
+      "decodePsbt": "python/shared/decode-psbt.py",
+      "sendPsbt": "python/online/send-psbt.py"
     }
   },
   {
@@ -22,13 +22,13 @@
     "title": "Sign transaction Offline Device",
     "description": "Offline device flow",
     "scripts": {
-      "decryptBackup": "python/decrypt-backup-to-bip39.py",
-      "convertBip39ToCore": "python/convert-bip39-to-core.py",
-      "importDescriptors": "python/import-descriptors.py",
-      "descriptorsToSb58": "python/descriptors-to-sb58.py",
-      "decodePsbt": "python/decode-psbt.py",
-      "signPsbt": "python/sign-psbt.py",
-      "deleteWallet": "python/delete-wallet.py"
+      "decryptBackup": "python/offline/decrypt-backup-to-bip39.py",
+      "convertBip39ToCore": "python/offline/convert-bip39-to-core.py",
+      "importDescriptors": "python/offline/import-descriptors.py",
+      "descriptorsToSb58": "python/offline/descriptors-to-sb58.py",
+      "decodePsbt": "python/shared/decode-psbt.py",
+      "signPsbt": "python/offline/sign-psbt.py",
+      "deleteWallet": "python/offline/delete-wallet.py"
     }
   }
 ]

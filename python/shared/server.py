@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """
-Local server that lets the guide's pages run the scripts in this folder. Run this
-offline, because requests carry secrets such as seed phrases.
+Local server that lets the guide's pages run the scripts in python/online/,
+python/offline/ and python/shared/. Run this offline, because requests carry
+secrets such as seed phrases.
 
 It listens on 127.0.0.1 only and accepts POST /run with a JSON body:
   {"script": "decrypt-backup-to-bip39", "inputs": {"backup": "...", ...}}
@@ -20,78 +21,94 @@ import sys
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
-SCRIPT_DIR = Path(__file__).resolve().parent
+# The python/ folder, which holds the online/, offline/ and shared/ folders
+PYTHON_DIR = Path(__file__).resolve().parent.parent
 MAX_BODY_BYTES = 64 * 1024
 TOKEN_HEADER = "X-Signer-Token"
 
-# script name -> file, function to call, required inputs and optional inputs
+# script name -> folder (online, offline or shared), function to call,
+# required inputs and optional inputs
 SCRIPTS = {
     "decrypt-backup-to-bip39": {
+        "folder": "offline",
         "function": "decrypt_backup",
         "required": {"backup", "encoding", "words", "passphrase"},
         "optional": {"otp"},
     },
     "delete-wallet": {
+        "folder": "offline",
         "function": "delete_wallet",
         "required": {"wallet", "confirm"},
         "optional": {"datadir"},
     },
     "list-public-descriptors": {
+        "folder": "online",
         "function": "list_public_descriptors",
         "required": {"wallet"},
         "optional": {"datadir"},
     },
     "descriptors-to-sb58": {
+        "folder": "offline",
         "function": "encode_sb58",
         "required": {"descriptors"},
         "optional": set(),
     },
     "import-public-descriptors": {
+        "folder": "online",
         "function": "import_public_descriptors",
         "required": {"wallet", "descriptors"},
         "optional": {"datadir", "rescan_since", "create_wallet", "network"},
     },
     "create-psbt": {
+        "folder": "online",
         "function": "create_psbt",
         "required": {"wallet", "address", "amount", "unit", "subtract_fee"},
         "optional": {"fee_rate", "change_type", "datadir"},
     },
     "decode-psbt": {
+        "folder": "shared",
         "function": "decode_psbt",
         "required": {"psbt"},
         "optional": {"wallet", "datadir"},
     },
     "sign-psbt": {
+        "folder": "offline",
         "function": "sign_psbt",
         "required": {"psbt", "wallet"},
         "optional": {"datadir"},
     },
     "add-signatures": {
+        "folder": "online",
         "function": "add_signatures",
         "required": {"psbt", "signatures"},
         "optional": {"datadir"},
     },
     "send-psbt": {
+        "folder": "online",
         "function": "send_psbt",
         "required": {"psbt"},
         "optional": {"datadir"},
     },
     "import-descriptors": {
+        "folder": "offline",
         "function": "import_descriptors",
         "required": {"wallet", "requests"},
         "optional": {"datadir", "network"},
     },
     "convert-bip39-to-core": {
+        "folder": "offline",
         "function": "convert_to_core",
         "required": {"mnemonic"},
         "optional": {"passphrase", "script_types", "wallet", "network"},
     },
     "qr-encode": {
+        "folder": "shared",
         "function": "encode_qr",
         "required": {"data", "kind", "passphrase"},
         "optional": set(),
     },
     "qr-scan": {
+        "folder": "shared",
         "function": "scan_qr",
         "required": {"kind", "passphrase"},
         "optional": {"camera"},
@@ -114,7 +131,7 @@ def run_script(name, inputs):
       raise ValueError(f"Missing inputs: {', '.join(missing)}")
   # Import on every request so edits to a script apply without restarting.
   module_spec = importlib.util.spec_from_file_location(
-      name.replace("-", "_"), SCRIPT_DIR / f"{name}.py"
+      name.replace("-", "_"), PYTHON_DIR / spec["folder"] / f"{name}.py"
   )
   module = importlib.util.module_from_spec(module_spec)
   module_spec.loader.exec_module(module)

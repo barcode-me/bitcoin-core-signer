@@ -19,7 +19,7 @@
 source python/venv/bin/activate
 pip3 install -r python/requirements.txt{{/code-block}}
   <p>Then start the script server and leave it running. In a new terminal, run <code>source python/venv/bin/activate</code> again first:</p>
-  {{#> code-block}}python3 python/server.py{{/code-block}}
+  {{#> code-block}}python3 python/shared/server.py{{/code-block}}
   <p id="server-status" class="server-status" role="status">Checking for the local server…</p>
 
   <p>Enter your encrypted backup and the secret used to encrypt it. The secret is hashed with SHA-256 to make the one-time pad, which is then XORed with your backup to give the BIP39 bits. BIP39 encodes those bits as 12 or 24 words, 11 bits per word, so the backup is 132 bits (33 hex digits) for 12 words or 264 bits (66 hex digits) for 24 words. A 24-word pad needs more than one SHA-256 hash, so the extra 8 bits come from hashing the first hash again. The script below does this, and you can run it here or copy it and run it yourself.</p>

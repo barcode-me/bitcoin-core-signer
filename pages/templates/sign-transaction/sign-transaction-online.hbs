@@ -56,7 +56,7 @@
 source python/venv/bin/activate
 pip3 install -r python/requirements.txt{{/code-block}}
     <p>Then start the local server and leave it running (run <code>source python/venv/bin/activate</code> first in a new terminal). This page must also be served on port 8000, for example with <code>python3 -m http.server 8000</code> from the project folder and opened at <code>http://localhost:8000/build/</code>, or the server will refuse it:</p>
-    {{#> code-block}}python3 python/server.py{{/code-block}}
+    {{#> code-block}}python3 python/shared/server.py{{/code-block}}
     <p id="server-status" class="server-status" role="status">Checking for the local server…</p>
 
     <form id="wallet-form" class="phonetic-form" autocomplete="off" novalidate>
@@ -103,7 +103,7 @@ pip3 install -r python/requirements.txt{{/code-block}}
   {{#> code-block}}python3 -m venv python/venv
 source python/venv/bin/activate
 pip3 install -r python/requirements.txt
-python3 python/server.py{{/code-block}}
+python3 python/shared/server.py{{/code-block}}
   <p class="server-status" role="status">Checking for the local server…</p>
   <p>Bitcoin Core only finds the transactions made after the date you give below. For a new wallet that has never received bitcoin, leave it empty: the import is instant. If the wallet has received bitcoin before, enter the date it was created, or an earlier one. Bitcoin Core then scans the blockchain from that date, which can take hours, and the page waits until it is done. A pruned node cannot scan further back than the blocks it kept.</p>
 

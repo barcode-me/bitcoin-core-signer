@@ -211,7 +211,7 @@
   const signedDetailsCell = document.querySelector('#signed-details');
   const sendCell = document.querySelector('[data-script=send-psbt]');
   const confirmSend = document.querySelector('#confirm-send');
-  // 4 bytes of the transaction ID, then 64 bytes per input, as in python/sign-psbt.py.
+  // 4 bytes of the transaction ID, then 64 bytes per input, as in python/offline/sign-psbt.py.
   const txidPrefixLength = 4;
   const signatureLength = 64;
   const btc = value => `${(value / 1e8).toFixed(8)} BTC (${value.toLocaleString('en-US')} sats)`;

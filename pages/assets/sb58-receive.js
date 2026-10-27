@@ -1,4 +1,4 @@
-/* Receives data typed as Super Base 58 (SB58), such as the public descriptors from python/descriptors-to-sb58.py. Input stays on this page. */
+/* Receives data typed as Super Base 58 (SB58), such as the public descriptors from python/offline/descriptors-to-sb58.py. Input stays on this page. */
 (() => {
   const base58 = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
   const letterWords = {
@@ -113,7 +113,7 @@
     return new Uint8Array(bytes);
   }
 
-  // Address types in bit order, as in python/descriptors-to-sb58.py.
+  // Address types in bit order, as in python/offline/descriptors-to-sb58.py.
   const scriptTypes = [
     { bit: 1, wrap: key => `pkh(${key})`, purpose: '44h' },
     { bit: 2, wrap: key => `sh(wpkh(${key}))`, purpose: '49h' },

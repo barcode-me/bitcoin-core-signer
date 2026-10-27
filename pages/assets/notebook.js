@@ -1,4 +1,4 @@
-/* Shared by the guide pages that run Python through the local server in python/server.py. Requests only go to localhost. */
+/* Shared by the guide pages that run Python through the local server in python/shared/server.py. Requests only go to localhost. */
 (() => {
   const root = document.querySelector('[data-server]');
   const server = root.dataset.server;
@@ -35,7 +35,7 @@
   // A page opened from a file can never reach the server, because the server only answers http://localhost:8000.
   const notRunning = location.protocol === 'file:'
     ? 'Cannot reach the local server: this page was opened from a file (file://). From the project folder, serve it with python3 -m http.server 8000 and open http://localhost:8000/build/ instead, or copy the code and run it yourself.'
-    : 'Cannot reach the local server. Start it with python3 python/server.py, and make sure this page is open at http://localhost:8000 (not file://), or copy the code and run it yourself.';
+    : 'Cannot reach the local server. Start it with python3 python/shared/server.py, and make sure this page is open at http://localhost:8000 (not file://), or copy the code and run it yourself.';
 
   async function checkServer() {
     try {
@@ -70,7 +70,7 @@
     setTimeout(() => { if (status.textContent === label) status.textContent = ''; }, 2000);
   }
 
-  // Runs a script listed in python/server.py and returns its result, or throws with the message to show.
+  // Runs a script listed in python/shared/server.py and returns its result, or throws with the message to show.
   async function runScript(script, inputs) {
     let response;
     try {

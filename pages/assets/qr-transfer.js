@@ -1,5 +1,5 @@
 /* Each transfer between the devices can use Super Base 58 lines or encrypted QR codes. QR codes are made by
-   python/qr-encode.py and scanned with the camera by python/qr-scan.py, through the local server. */
+   python/shared/qr-encode.py and scanned with the camera by python/shared/qr-scan.py, through the local server. */
 (() => {
   const { runScript, copyText } = globalThis.Notebook;
   const passphraseInput = document.querySelector('#qr-passphrase');
