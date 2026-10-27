@@ -11,8 +11,9 @@
 
 <section class="part">
   <h2>Encode text into lines</h2>
-  <p>Enter the text to send, then press Make lines. The text is sent as UTF-8 and is not encrypted, so anyone who sees the lines can read it.</p>
+  <p>Enter the text to send, then press Make lines. Choose UTF-8 text to send the text as typed, or Hex to send the bytes it spells out in hexadecimal, two characters per byte. Nothing is encrypted, so anyone who sees the lines can read it.</p>
   <form id="sb58-encode-form" class="phonetic-form" autocomplete="off" novalidate>
+    {{> format-choice name="sb58-encode-format" legend="The text is"}}
     <div class="phonetic-field">
       <label for="sb58-encode-text">Text to send</label>
       <textarea id="sb58-encode-text" rows="8" spellcheck="false" autocomplete="off" autocapitalize="off"></textarea>
@@ -51,6 +52,7 @@
   </ul>
 
   <div id="sb58-decoder">
+    {{> format-choice name="sb58-decode-format" legend="Show the data as"}}
     <div class="sb58-editor">
       <div class="sb58-gutter" aria-hidden="true"></div>
       <textarea class="sb58-input" rows="14" wrap="off" spellcheck="false" autocomplete="off" autocapitalize="off" aria-label="SB58 lines" aria-describedby="sb58-status sb58-hint sb58-errors"></textarea>
@@ -68,6 +70,7 @@
 </section>
 
 <noscript>This page needs JavaScript enabled.</noscript>
+<script src="{{assetsHref}}/byte-format.js" defer></script>
 <script src="{{assetsHref}}/sb58-viewer.js" defer></script>
 <script src="{{assetsHref}}/sb58-receive.js" defer></script>
 <script src="{{assetsHref}}/sb58-text.js" defer></script>

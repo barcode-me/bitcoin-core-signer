@@ -36,6 +36,7 @@ Handlebars.registerPartial('code-block', await readFile(join(templates, 'shared/
 Handlebars.registerPartial('important-callout', await readFile(join(templates, 'shared/important-callout.hbs'), 'utf8'));
 Handlebars.registerPartial('flow-header', await readFile(join(templates, 'shared/flow-header.hbs'), 'utf8'));
 Handlebars.registerPartial('flow-navigation', await readFile(join(templates, 'shared/flow-navigation.hbs'), 'utf8'));
+Handlebars.registerPartial('format-choice', await readFile(join(templates, 'shared/format-choice.hbs'), 'utf8'));
 const rendered = [];
 async function renderPage(template, filename, context = {}) {
   const render = Handlebars.compile(await readFile(join(templates, template), 'utf8'), { preventIndent: true });

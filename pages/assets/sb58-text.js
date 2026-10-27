@@ -17,10 +17,10 @@
 
   form.addEventListener('submit', async event => {
     event.preventDefault();
-    const bytes = new TextEncoder().encode(text.value);
     clear();
-    if (!bytes.length) { status.textContent = 'Enter the text to send first.'; return; }
     try {
+      const bytes = ByteFormat.parse(text.value, ByteFormat.selected(form, 'sb58-encode-format'));
+      if (!bytes.length) { status.textContent = 'Enter the text to send first.'; return; }
       const lines = await SB58.encodeLines(bytes);
       const encoded = SB58.base58Encode(bytes);
       status.textContent = `${bytes.length} ${bytes.length === 1 ? 'byte' : 'bytes'} as ${encoded.length} Base58 characters, in ${lines.length - 1} ${lines.length === 2 ? 'line' : 'lines'} and the final checksum.`;
@@ -32,7 +32,9 @@
     }
   });
   // Lines of older text must not be read out by mistake.
-  text.addEventListener('input', () => { clear(); status.textContent = ''; });
+  const reset = () => { clear(); status.textContent = ''; };
+  text.addEventListener('input', reset);
+  for (const radio of form.elements['sb58-encode-format']) radio.addEventListener('change', reset);
 
   base58.querySelector('.sb58-copy').addEventListener('click', async () => {
     try {
@@ -43,14 +45,13 @@
     }
   });
 
-  SB58.setupEditor(document.querySelector('#sb58-decoder'), {
-    decode: bytes => {
-      try {
-        return new TextDecoder('utf-8', { fatal: true }).decode(bytes);
-      } catch {
-        throw new Error('The lines check out, but they do not hold UTF-8 text.');
-      }
-    },
-    show: value => ({ text: value, status: `Recovered ${[...value].length} ${[...value].length === 1 ? 'character' : 'characters'}.` }),
+  const decoder = document.querySelector('#sb58-decoder');
+  SB58.setupEditor(decoder, {
+    decode: bytes => ByteFormat.show(bytes, ByteFormat.selected(decoder, 'sb58-decode-format')),
+    show: shown => ({ text: shown.text, status: `Recovered ${shown.count}.` }),
   });
+  // Decode the typed lines again in the newly chosen format.
+  for (const radio of decoder.querySelectorAll('[name=sb58-decode-format]')) {
+    radio.addEventListener('change', () => decoder.querySelector('.sb58-input').dispatchEvent(new Event('input')));
+  }
 })();

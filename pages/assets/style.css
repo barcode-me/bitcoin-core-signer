@@ -98,6 +98,10 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fo
 
 .phonetic-form input[type=radio], .phonetic-form input[type=checkbox] { width: auto; margin: 0; accent-color: #304632; }
 .phonetic-form input:disabled { background: #eef0e7; }
+.format-choice { display: flex; flex-wrap: wrap; gap: 8px 20px; margin: 0 0 16px; padding: 0; border: 0; }
+.format-choice legend { padding: 0; margin-bottom: 7px; font-size: 14px; font-weight: 600; }
+.phonetic-form .format-choice label, .format-choice label { display: inline-flex; align-items: center; gap: 7px; margin: 0; font-weight: 400; cursor: pointer; }
+.format-choice input[type=radio] { width: auto; margin: 0; accent-color: #304632; }
 .notebook-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-bottom: 10px; }
 .notebook-toolbar button { cursor: pointer; padding: 8px 14px; border: 1px solid #a4b29e; border-radius: 5px; background: #e8ecdf; color: #233f2a; font: inherit; font-size: 14px; }
 .notebook-toolbar button:hover:not(:disabled) { background: #d7e0ce; }

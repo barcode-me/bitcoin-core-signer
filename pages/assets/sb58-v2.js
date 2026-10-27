@@ -233,10 +233,10 @@
 
   form.addEventListener('submit', async event => {
     event.preventDefault();
-    const bytes = new TextEncoder().encode(text.value);
     clear();
-    if (!bytes.length) { encodeStatus.textContent = 'Enter the text to send first.'; return; }
     try {
+      const bytes = ByteFormat.parse(text.value, ByteFormat.selected(form, 'sb58v2-encode-format'));
+      if (!bytes.length) { encodeStatus.textContent = 'Enter the text to send first.'; return; }
       const encoded = await encode(bytes);
       encodeStatus.textContent = `${plural(bytes.length, 'byte')} as ${encoded.encoded.length} Base58 characters in ${plural(encoded.blockCount, 'block')}, then the final checksum.`;
       base58Output.textContent = encoded.encoded;
@@ -247,7 +247,9 @@
     }
   });
   // Lines of older text must not be read out by mistake.
-  text.addEventListener('input', () => { clear(); encodeStatus.textContent = ''; });
+  const reset = () => { clear(); encodeStatus.textContent = ''; };
+  text.addEventListener('input', reset);
+  for (const radio of form.elements['sb58v2-encode-format']) radio.addEventListener('change', reset);
   base58.querySelector('.sb58-copy').addEventListener('click', () => copyText(base58Output.textContent, base58CopyStatus));
 
   const decoder = document.querySelector('#sb58v2-decoder');
@@ -277,19 +279,20 @@
     if (version !== revision) return;
     if (decoded.error) { decodeStatus.textContent = 'Something needs attention.'; showError(decoded.error); return; }
     if (decoded.status) { decodeStatus.textContent = decoded.status; return; }
-    let value;
+    let shown;
     try {
-      value = new TextDecoder('utf-8', { fatal: true }).decode(decoded.bytes);
-    } catch {
-      decodeStatus.textContent = 'Something needs attention.';
-      showError('Every checksum matches, but the data is not UTF-8 text.');
+      shown = ByteFormat.show(decoded.bytes, ByteFormat.selected(decoder, 'sb58v2-decode-format'));
+    } catch (error) {
+      decodeStatus.textContent = 'Every checksum matches, but the data cannot be shown.';
+      showError(error.message);
       return;
     }
-    output.textContent = value;
+    output.textContent = shown.text;
     result.hidden = false;
-    decodeStatus.textContent = `Recovered ${plural([...value].length, 'character')} from ${plural(decoded.blockCount, 'block')}. Every block checksum and the final checksum match.`;
+    decodeStatus.textContent = `Recovered ${shown.count} from ${plural(decoded.blockCount, 'block')}. Every block checksum and the final checksum match.`;
   }
   input.addEventListener('input', update);
+  for (const radio of decoder.querySelectorAll('[name=sb58v2-decode-format]')) radio.addEventListener('change', update);
   result.querySelector('.sb58-copy').addEventListener('click', () => copyText(output.textContent, decodeStatus));
   update();
 })();
