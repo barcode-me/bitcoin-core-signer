@@ -119,5 +119,28 @@
     },
   });
   clearOnEdit(walletForm, clearWallet);
+
+  // Part 2: import the typed descriptors into a new watch-only wallet
+  const importForm = document.querySelector('#import-form');
+  const clearImport = setupCell(document.querySelector('[data-script=import-public-descriptors]'), {
+    collect: () => {
+      if (source() === 'wallet') throw new Error('These descriptors were loaded from a wallet in Bitcoin Core, which already has them. Nothing to import.');
+      if (!received) throw new Error('Type the Super Base 58 lines in Part 1 first. Part 2 imports the descriptors they recover.');
+      const wallet = document.querySelector('#import-wallet-name').value.trim();
+      if (!wallet) throw new Error('Enter a name for the wallet.');
+      const rescanSince = document.querySelector('#rescan-since').value;
+      const datadir = document.querySelector('#import-datadir').value.trim();
+      const createWallet = document.querySelector('#create-wallet').checked;
+      return { wallet, descriptors: received, create_wallet: createWallet, ...(rescanSince ? { rescan_since: rescanSince } : {}), ...(datadir ? { datadir } : {}) };
+    },
+    show: imported => {
+      const scanned = imported.rescan_since ? `Scanned the blockchain from ${imported.rescan_since}.` : 'No past transactions were looked for.';
+      const action = imported.created ? 'Created watch-only wallet' : 'Imported into wallet';
+      return `${action} ${imported.wallet}: ${imported.imported} public descriptors. ${scanned}\nBalance: ${imported.balance.toFixed(8)} BTC`;
+    },
+  });
+  clearOnEdit(importForm, clearImport);
+  // New descriptors make the import result stale.
+  document.addEventListener('sb58-recovered', clearImport);
   apply();
 })();

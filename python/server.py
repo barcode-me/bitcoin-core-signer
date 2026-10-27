@@ -40,6 +40,11 @@ SCRIPTS = {
         "required": {"descriptors"},
         "optional": set(),
     },
+    "import-public-descriptors": {
+        "function": "import_public_descriptors",
+        "required": {"wallet", "descriptors"},
+        "optional": {"datadir", "rescan_since", "create_wallet"},
+    },
     "import-descriptors": {
         "function": "import_descriptors",
         "required": {"wallet", "requests"},

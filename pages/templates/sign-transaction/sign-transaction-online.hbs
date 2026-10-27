@@ -87,6 +87,50 @@ pip3 install -r python/requirements.txt{{/code-block}}
   <pre id="selected-descriptors" class="selected-descriptors" tabindex="0" hidden></pre>
   </section>
 
+  <section class="part">
+  <h2>Part 2: Import the public descriptors into Bitcoin Core</h2>
+  <p><strong>Skip this part if you loaded the descriptors from a wallet in Part 1.</strong> That wallet already has them.</p>
+  <p>This creates a new, empty watch-only wallet in Bitcoin Core and imports every public descriptor typed in Part 1, for all address types. To import into a watch-only wallet that already exists instead, uncheck "Create an empty wallet"; the wallet is loaded first if it is not loaded. A watch-only wallet has no private keys: it shows your balance and creates transactions, but only the offline device can sign them. Bitcoin Core must be running on this device. If you started it with a custom <code>-datadir</code>, enter the same directory below.</p>
+  <p>The page runs the script through the local server. If it is not running yet, set up the Python environment and start it as described in Part 1 under "Loading a wallet", or in a terminal from the project folder:</p>
+  {{#> code-block}}python3 -m venv python/venv
+source python/venv/bin/activate
+pip3 install -r python/requirements.txt
+python3 python/server.py{{/code-block}}
+  <p class="server-status" role="status">Checking for the local server…</p>
+  <p>Bitcoin Core only finds the transactions made after the date you give below. For a new wallet that has never received bitcoin, leave it empty: the import is instant. If the wallet has received bitcoin before, enter the date it was created, or an earlier one. Bitcoin Core then scans the blockchain from that date, which can take hours, and the page waits until it is done. A pruned node cannot scan further back than the blocks it kept.</p>
+
+  <form id="import-form" class="phonetic-form" autocomplete="off" novalidate>
+    <div class="phonetic-field">
+      <label for="import-wallet-name">Wallet name</label>
+      <input id="import-wallet-name" value="my-wallet" spellcheck="false" autocomplete="off" autocapitalize="off">
+      <label class="choice"><input type="checkbox" id="create-wallet" checked> Create an empty wallet with this name</label>
+    </div>
+    <div class="phonetic-field">
+      <label for="rescan-since">Look for transactions since (optional)</label>
+      <input id="rescan-since" type="date">
+    </div>
+    <div class="phonetic-field">
+      <label for="import-datadir">Bitcoin Core data directory (optional)</label>
+      <input id="import-datadir" placeholder="Leave empty for the default, or e.g. /YOUR/DRIVE" spellcheck="false" autocomplete="off" autocapitalize="off">
+    </div>
+  </form>
+
+  <div class="notebook-cell" data-script="import-public-descriptors">
+    <div class="notebook-toolbar">
+      <button type="button" class="run-button" data-action="run">&#9654; Import descriptors</button>
+      <button type="button" data-action="copy-code">Copy code</button>
+      <span class="run-status" role="status"></span>
+    </div>
+    {{#> code-block caption="Python" language="python"}}{{scripts.importPublicDescriptors}}{{/code-block}}
+    <div class="notebook-output" hidden aria-live="polite">
+      <p class="notebook-output-label">Output</p>
+      <pre class="result" tabindex="0"></pre>
+    </div>
+  </div>
+  <p>To run it yourself, save the code as <code>import-public-descriptors.py</code> and run it with the environment above active. It reads the public descriptors from standard input, one per line. Add <code>--existing</code> to import into a wallet that already exists:</p>
+  {{#> code-block}}python3 import-public-descriptors.py --wallet my-wallet --rescan-since 2024-01-31{{/code-block}}
+  </section>
+
   <noscript>This page needs JavaScript enabled.</noscript>
 </section>
 <script src="{{assetsHref}}/notebook.js" defer></script>

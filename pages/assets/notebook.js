@@ -2,7 +2,8 @@
 (() => {
   const root = document.querySelector('[data-server]');
   const server = root.dataset.server;
-  const serverStatus = document.querySelector('#server-status');
+  // A page may show the server status in more than one place, such as two parts that each need the server.
+  const setServerStatus = text => document.querySelectorAll('.server-status').forEach(status => { status.textContent = text; });
 
   // Opened from a file: offer the same page on localhost:8000, served from the project folder.
   // data-home is the site's index.html, so its folder (build) and everything after it is the path.
@@ -35,12 +36,12 @@
       const response = await fetch(`${server}/health`, { cache: 'no-store' });
       if (!response.ok) {
         const body = await response.json().catch(() => ({}));
-        serverStatus.textContent = `The local server refused this page: ${body.error ?? response.status}`;
+        setServerStatus(`The local server refused this page: ${body.error ?? response.status}`);
         return;
       }
-      serverStatus.textContent = 'Local server is running.';
+      setServerStatus('Local server is running.');
     } catch {
-      serverStatus.textContent = notRunning;
+      setServerStatus(notRunning);
     }
   }
   checkServer();
@@ -111,10 +112,10 @@
             body: JSON.stringify({ script: cell.dataset.script, inputs }),
           });
         } catch {
-          serverStatus.textContent = notRunning;
+          setServerStatus(notRunning);
           return showResult(notRunning, true);
         }
-        serverStatus.textContent = 'Local server is running.';
+        setServerStatus('Local server is running.');
         const body = await response.json().catch(() => ({}));
         if (response.ok) showResult(show(body.result), false);
         else showResult(body.error ?? `Server returned ${response.status}`, true);

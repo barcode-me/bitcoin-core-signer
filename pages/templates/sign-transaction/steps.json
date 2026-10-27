@@ -9,7 +9,8 @@
     "title": "Sign transaction Online Device",
     "description": "Online device flow",
     "scripts": {
-      "listPublicDescriptors": "python/list-public-descriptors.py"
+      "listPublicDescriptors": "python/list-public-descriptors.py",
+      "importPublicDescriptors": "python/import-public-descriptors.py"
     }
   },
   {
