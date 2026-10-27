@@ -77,6 +77,8 @@ The page sends the inputs as a POST request to `python/server.py`, which the use
 
 The server answers only requests whose `Host` is localhost and whose `Origin` is the guide's pages, by default `http://localhost:8000` and `http://127.0.0.1:8000` (`--allow-origin` adds others). This keeps other websites in the browser from calling it. Serve `build/` on port 8000, or pass `--allow-origin` for the port you use, and update `data-server` in the template if you change the server port.
 
+The server also prints a new random token each time it starts. Every `GET` and `POST` must send it in the `X-Signer-Token` header, or the server answers 401; CORS preflights are exempt because browsers cannot add headers to them. Pages that use the server include the `server-token` partial at the top, a password field the user pastes the token into, and `pages/assets/notebook.js` sends its value with every request. The token is not saved in the browser.
+
 Keep a script's logic in functions and call them from `main()` under `if __name__ == "__main__":`, since the server imports the file instead of running it.
 
 ## Testing with bitcoin regtest

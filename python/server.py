@@ -7,16 +7,22 @@ It listens on 127.0.0.1 only and accepts POST /run with a JSON body:
   {"script": "decrypt-backup-to-bip39", "inputs": {"backup": "...", ...}}
 It imports the named script and calls its function with the inputs. Only scripts
 listed in SCRIPTS can run, and each one only accepts the inputs listed for it.
+
+A new token is printed when the server starts. Every request must send it in the
+X-Signer-Token header, which the pages take from the token field at their top.
 """
 import argparse
+import hmac
 import importlib.util
 import json
+import secrets
 import sys
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
 SCRIPT_DIR = Path(__file__).resolve().parent
 MAX_BODY_BYTES = 64 * 1024
+TOKEN_HEADER = "X-Signer-Token"
 
 # script name -> file, function to call, required inputs and optional inputs
 SCRIPTS = {
@@ -105,7 +111,7 @@ def run_script(name, inputs):
   return getattr(module, spec["function"])(**inputs)
 
 
-def make_handler(port, allowed_origins):
+def make_handler(port, allowed_origins, token):
   allowed_hosts = {f"127.0.0.1:{port}", f"localhost:{port}"}
 
   class Handler(BaseHTTPRequestHandler):
@@ -126,6 +132,16 @@ def make_handler(port, allowed_origins):
           # Hosts and origins are not secret, and naming them shows what to allow.
           print(f"Rejected {self.command} {self.path}: {reason}{hint}", file=sys.stderr)
           self.send_json(403, {"error": f"{reason}{hint}"})
+
+      def has_token(self):
+          # The token stops other programs on this device. Preflights cannot carry it, so they do not need it.
+          sent = self.headers.get(TOKEN_HEADER, "")
+          if hmac.compare_digest(sent.encode(), token.encode()):
+              return True
+          reason = "Wrong token" if sent else "Missing token"
+          print(f"Rejected {self.command} {self.path}: {reason}", file=sys.stderr)
+          self.send_json(401, {"error": f"{reason}. Paste the token printed when the server started into the token field at the top of the page."})
+          return False
 
       def allowed(self):
           # The Host check stops DNS rebinding, the Origin check stops other websites.
@@ -152,12 +168,12 @@ def make_handler(port, allowed_origins):
               self.send_header("Access-Control-Allow-Origin", origin)
               self.send_header("Vary", "Origin")
           self.send_header("Access-Control-Allow-Methods", "POST, GET")
-          self.send_header("Access-Control-Allow-Headers", "Content-Type")
+          self.send_header("Access-Control-Allow-Headers", f"Content-Type, {TOKEN_HEADER}")
           self.send_header("Content-Length", "0")
           self.end_headers()
 
       def do_GET(self):
-          if not self.allowed():
+          if not self.allowed() or not self.has_token():
               return
           if self.path == "/health":
               self.send_json(200, {"status": "ok"})
@@ -165,7 +181,7 @@ def make_handler(port, allowed_origins):
               self.send_json(404, {"error": "Not found"})
 
       def do_POST(self):
-          if not self.allowed():
+          if not self.allowed() or not self.has_token():
               return
           if self.path != "/run":
               return self.send_json(404, {"error": "Not found"})
@@ -206,8 +222,10 @@ def main():
   args = parser.parse_args()
   origins = set(args.allow_origin or ["http://localhost:8000", "http://127.0.0.1:8000"])
 
-  server = ThreadingHTTPServer(("127.0.0.1", args.port), make_handler(args.port, origins))
+  token = secrets.token_urlsafe(32)
+  server = ThreadingHTTPServer(("127.0.0.1", args.port), make_handler(args.port, origins, token))
   print(f"Listening on http://127.0.0.1:{args.port} for pages from: {', '.join(sorted(origins))}")
+  print(f"Token (paste it into the token field at the top of the page): {token}")
   print("Press Ctrl-C to stop.")
   try:
       server.serve_forever()

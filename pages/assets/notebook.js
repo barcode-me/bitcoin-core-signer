@@ -2,6 +2,9 @@
 (() => {
   const root = document.querySelector('[data-server]');
   const server = root.dataset.server;
+  // The token printed by the server, pasted at the top of the page. Every request sends it.
+  const tokenInput = document.querySelector('#server-token');
+  const headers = (extra = {}) => ({ ...extra, 'X-Signer-Token': tokenInput?.value.trim() ?? '' });
   // A page may show the server status in more than one place, such as two parts that each need the server.
   const setServerStatus = text => document.querySelectorAll('.server-status').forEach(status => { status.textContent = text; });
 
@@ -33,7 +36,7 @@
 
   async function checkServer() {
     try {
-      const response = await fetch(`${server}/health`, { cache: 'no-store' });
+      const response = await fetch(`${server}/health`, { headers: headers(), cache: 'no-store' });
       if (!response.ok) {
         const body = await response.json().catch(() => ({}));
         setServerStatus(`The local server refused this page: ${body.error ?? response.status}`);
@@ -45,6 +48,7 @@
     }
   }
   checkServer();
+  tokenInput?.addEventListener('input', checkServer);
 
   async function copyText(text, status, label = 'Copied.') {
     try {
@@ -107,7 +111,7 @@
         try {
           response = await fetch(`${server}/run`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: headers({ 'Content-Type': 'application/json' }),
             cache: 'no-store',
             body: JSON.stringify({ script: cell.dataset.script, inputs }),
           });

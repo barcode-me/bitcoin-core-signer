@@ -1,7 +1,9 @@
 /* The data directory choice at the top of the pages that run bitcoin-cli: the default, a remembered path, or a new one.
-   The scripts read #datadir, which this keeps in step with the choice. Paths are remembered in this browser only. */
+   The scripts read #datadir, which this keeps in step with the choice. Paths are remembered in this browser only, as soon as they are typed. */
 (() => {
   const storageKey = 'bitcoin-core-signer.datadirs';
+  // The path chosen last, or '' for the default, so a reload shows the same choice.
+  const selectedKey = 'bitcoin-core-signer.datadir';
   const maxPaths = 10;
   const choice = document.querySelector('#datadir-choice');
   const input = document.querySelector('#datadir');
@@ -18,6 +20,12 @@
   }
   function savePaths(paths) {
     try { localStorage.setItem(storageKey, JSON.stringify(paths)); } catch { /* Not remembered, but still used. */ }
+  }
+  function loadSelected() {
+    try { return localStorage.getItem(selectedKey); } catch { return null; }
+  }
+  function saveSelected(path) {
+    try { localStorage.setItem(selectedKey, path); } catch { /* Not remembered, but still used. */ }
   }
 
   function option(kind, label, value = '') {
@@ -46,22 +54,38 @@
     if (kind !== 'new') input.value = choice.value;
   }
 
+  // The new path being typed. Each keystroke replaces it in the list, so only the whole path is kept.
+  let typing = null;
+
   choice.addEventListener('change', () => {
     const isNew = choice.selectedOptions[0].dataset.kind === 'new';
+    typing = null;
     if (isNew) input.value = '';
     sync();
     if (isNew) input.focus();
+    else saveSelected(choice.value);
   });
 
-  // Called after a script ran successfully with this path, so only paths that worked are remembered.
+  // Saved as soon as it is typed, so a reload keeps it. The list is not redrawn, which would move the focus.
+  input.addEventListener('input', () => {
+    const path = input.value.trim();
+    const others = loadPaths().filter(saved => saved !== typing && saved !== path);
+    savePaths(path ? [path, ...others].slice(0, maxPaths) : others);
+    saveSelected(path);
+    typing = path || null;
+  });
+
+  // Called after a script ran successfully with this path, which moves it to the top of the list.
   function remember(path) {
     path = path.trim();
     if (!path) return;
+    typing = null;
     savePaths([path, ...loadPaths().filter(saved => saved !== path)].slice(0, maxPaths));
+    saveSelected(path);
     render(path);
   }
 
-  // Start with the most recently used path.
-  render(loadPaths()[0] ?? '');
+  // Start with the last choice, or the most recently used path.
+  render(loadSelected() ?? loadPaths()[0] ?? '');
   globalThis.NodeSettings = { remember };
 })();

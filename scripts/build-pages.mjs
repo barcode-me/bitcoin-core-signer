@@ -35,6 +35,7 @@ Handlebars.registerPartial('important-callout', await readFile(join(templates, '
 Handlebars.registerPartial('flow-header', await readFile(join(templates, 'shared/flow-header.hbs'), 'utf8'));
 Handlebars.registerPartial('flow-navigation', await readFile(join(templates, 'shared/flow-navigation.hbs'), 'utf8'));
 Handlebars.registerPartial('node-settings', await readFile(join(templates, 'shared/node-settings.hbs'), 'utf8'));
+Handlebars.registerPartial('server-token', await readFile(join(templates, 'shared/server-token.hbs'), 'utf8'));
 const rendered = [];
 // Python files a step shows and runs, read once so the page and the script cannot drift apart.
 async function readScripts(step) {
