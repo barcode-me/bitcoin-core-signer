@@ -185,7 +185,7 @@ def encode_sb58(descriptors):
   final_checksum = f"{int.from_bytes(digest[-2:], 'big'):05d}"
   return {
       "lines": lines, "final_checksum": final_checksum, "bytes": len(payload),
-      "base58_chars": len(encoded), "script_types": script_types,
+      "base58_chars": len(encoded), "script_types": script_types, "hex": payload.hex(),
   }
 
 

@@ -194,6 +194,7 @@
   // and a .sb58-result with a .sb58-output and a .sb58-copy button.
   // decode(bytes) turns the recovered bytes into a value, or throws when they are not what this editor expects.
   // show(value) returns { text, status } for the result, and onChange(value) hears every new value, or null.
+  // show and decode are shared with QR codes, so the status does not mention the final checksum.
   function setupEditor(container, { decode, show, onChange = () => {} }) {
     const find = selector => container.querySelector(selector);
     const input = find('.sb58-input');
@@ -268,7 +269,7 @@
       const shown = show(value);
       output.textContent = shown.text;
       result.hidden = false;
-      showStatus(shown.status);
+      showStatus(`${shown.status} The final checksum matches.`);
       announce(value);
     }
 

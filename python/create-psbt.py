@@ -110,7 +110,8 @@ def encode_sb58(data):
       lines.append(f"{words} {casing} {char_word(check)}")
   digest = hashlib.sha256("\n".join(lines).encode("utf-8")).digest()
   final_checksum = f"{int.from_bytes(digest[-2:], 'big'):05d}"
-  return {"lines": lines, "final_checksum": final_checksum, "bytes": len(data), "base58_chars": len(encoded)}
+  # hex is the same bytes, for QR codes instead of lines
+  return {"lines": lines, "final_checksum": final_checksum, "bytes": len(data), "base58_chars": len(encoded), "hex": data.hex()}
 
 
 def amount_in_sats(amount, unit):

@@ -38,7 +38,7 @@
   const walletForm = document.querySelector('#wallet-form');
   const walletCell = document.querySelector('[data-script=list-public-descriptors]');
 
-  let received = null;   // descriptors recovered from the typed SB58 lines
+  let received = null;   // descriptors recovered from the typed SB58 lines or the scanned QR codes
   let fromWallet = null; // descriptors listed from a Bitcoin Core wallet
   const source = () => sourceForm.querySelector('input[name=source]:checked').value;
 
@@ -93,12 +93,12 @@
     setDescriptors(useWallet ? fromWallet : received);
   }
 
-  // Tells the rest of the page which descriptors the typed lines recovered, or null when they no longer do.
-  globalThis.SB58.setupEditor(document.querySelector('#descriptor-receiver'), {
+  // Tells the rest of the page which descriptors the typed lines or QR codes recovered, or null when they no longer do.
+  globalThis.QrTransfer.setupReceiver(document.querySelector('#descriptors-transfer'), document.querySelector('#descriptor-receiver'), 'descriptors', {
     decode: bytes => globalThis.SB58.rebuildDescriptors(bytes),
     show: descriptors => ({
       text: descriptors.join('\n'),
-      status: `Recovered ${descriptors.length} ${descriptors.length === 1 ? 'descriptor' : 'descriptors'}. The final checksum matches.`,
+      status: `Recovered ${descriptors.length} ${descriptors.length === 1 ? 'descriptor' : 'descriptors'}.`,
     }),
     onChange: descriptors => document.dispatchEvent(new CustomEvent('sb58-recovered', { detail: descriptors })),
   });
@@ -136,7 +136,7 @@
   const clearImport = setupCell(document.querySelector('[data-script=import-public-descriptors]'), {
     collect: () => {
       if (source() === 'wallet') throw new Error('These descriptors were loaded from a wallet in Bitcoin Core, which already has them. Nothing to import.');
-      if (!received) throw new Error('Type the Super Base 58 lines in Part 1 first. Part 2 imports the descriptors they recover.');
+      if (!received) throw new Error('Receive the public descriptors in Part 1 first. Part 2 imports the descriptors they recover.');
       const wallet = document.querySelector('#import-wallet-name').value.trim();
       if (!wallet) throw new Error('Enter a name for the wallet.');
       const rescanSince = document.querySelector('#rescan-since').value;
@@ -156,11 +156,11 @@
   // New descriptors make the import result stale.
   document.addEventListener('sb58-recovered', clearImport);
 
-  // Part 3: create an unsigned transaction with the wallet and show it as SB58 lines for the offline device
+  // Part 3: create an unsigned transaction with the wallet and show it as SB58 lines or QR codes for the offline device
   const psbtForm = document.querySelector('#psbt-form');
   const psbtWallet = document.querySelector('#psbt-wallet-name');
   const psbtCell = document.querySelector('[data-script=create-psbt]');
-  const psbtViewer = globalThis.SB58Viewer.setupViewer(psbtCell.querySelector('.sb58-viewer'));
+  const psbtViewer = globalThis.QrTransfer.setupSender(document.querySelector('#psbt-transfer'), psbtCell, 'psbt');
   const sats = value => `${value.toLocaleString('en-US')} sats (${(value / 1e8).toFixed(8)} BTC)`;
   const clearPsbt = setupCell(psbtCell, {
     collect: () => {
@@ -183,7 +183,7 @@
       };
     },
     show: created => {
-      psbtViewer.show([...created.lines, created.final_checksum]);
+      psbtViewer.show([...created.lines, created.final_checksum], created.hex);
       // Part 4 adds the signatures to this transaction.
       document.querySelector('#unsigned-psbt').value = created.psbt;
       document.querySelector('#unsigned-form').dispatchEvent(new Event('input'));
@@ -205,7 +205,7 @@
   clearOnEdit(psbtForm, clearPsbt);
   // Change goes to the address type chosen in Part 1, so a new choice makes the transaction stale.
   document.addEventListener('signer-state', clearPsbt);
-  // Part 4: SB58 lines from the offline device -> signatures -> added to the Part 3 PSBT -> its details -> sent with Bitcoin Core
+  // Part 4: SB58 lines or QR codes from the offline device -> signatures -> added to the Part 3 PSBT -> its details -> sent with Bitcoin Core
   const unsignedPsbt = document.querySelector('#unsigned-psbt');
   const addCell = document.querySelector('[data-script=add-signatures]');
   const signedDetailsCell = document.querySelector('#signed-details');
@@ -215,11 +215,11 @@
   const txidPrefixLength = 4;
   const signatureLength = 64;
   const btc = value => `${(value / 1e8).toFixed(8)} BTC (${value.toLocaleString('en-US')} sats)`;
-  let signatures = null; // hex, from the typed SB58 lines
+  let signatures = null; // hex, from the typed SB58 lines or the scanned QR codes
   let signedPsbt = null;  // the Part 3 PSBT with the signatures added, finalized
   const clearSignedDetails = setupCell(signedDetailsCell, {
     collect: () => {
-      if (!signedPsbt) throw new Error('Type the SB58 lines from the offline device above and add the signatures first.');
+      if (!signedPsbt) throw new Error('Type the SB58 lines or scan the QR codes from the offline device above, and add the signatures first.');
       const wallet = psbtWallet.value.trim();
       const datadir = document.querySelector('#datadir').value.trim();
       return { psbt: signedPsbt, ...(wallet ? { wallet } : {}), ...(datadir ? { datadir } : {}) };
@@ -243,7 +243,7 @@
   });
   const clearSend = setupCell(sendCell, {
     collect: () => {
-      if (!signedPsbt) throw new Error('Type the SB58 lines from the offline device above and add the signatures first.');
+      if (!signedPsbt) throw new Error('Type the SB58 lines or scan the QR codes from the offline device above, and add the signatures first.');
       if (!confirmSend.checked) throw new Error('Check the transaction details, then tick the box above to confirm. Nothing was sent.');
       const datadir = document.querySelector('#datadir').value.trim();
       return { psbt: signedPsbt, ...(datadir ? { datadir } : {}) };
@@ -258,7 +258,7 @@
     collect: () => {
       const psbt = unsignedPsbt.value.trim();
       if (!psbt) throw new Error('Create the transaction in Part 3, or paste the unsigned PSBT it showed above.');
-      if (!signatures) throw new Error('Type the SB58 lines from the offline device above first.');
+      if (!signatures) throw new Error('Type the SB58 lines or scan the QR codes from the offline device above first.');
       const datadir = document.querySelector('#datadir').value.trim();
       return { psbt, signatures, ...(datadir ? { datadir } : {}) };
     },
@@ -278,15 +278,15 @@
   // Signatures only fit the unsigned transaction they were made for.
   clearOnEdit(document.querySelector('#unsigned-form'), clearAdd);
 
-  globalThis.SB58.setupEditor(document.querySelector('#signed-receiver'), {
+  globalThis.QrTransfer.setupReceiver(document.querySelector('#signatures-transfer'), document.querySelector('#signed-receiver'), 'signatures', {
     decode: bytes => {
       const count = (bytes.length - txidPrefixLength) / signatureLength;
-      if (!Number.isInteger(count) || count < 1) throw new Error('The lines check out but do not hold signatures. Check that these are the lines shown after signing on the offline device.');
+      if (!Number.isInteger(count) || count < 1) throw new Error('The data does not hold signatures. Check that it is what the offline device showed after signing.');
       return [...bytes].map(byte => byte.toString(16).padStart(2, '0')).join('');
     },
     show: hex => {
       const count = (hex.length / 2 - txidPrefixLength) / signatureLength;
-      return { text: hex, status: `Received ${count} ${count === 1 ? 'signature' : 'signatures'}. The final checksum matches.` };
+      return { text: hex, status: `Received ${count} ${count === 1 ? 'signature' : 'signatures'}.` };
     },
     onChange: hex => {
       signatures = hex;

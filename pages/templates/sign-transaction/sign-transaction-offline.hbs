@@ -6,6 +6,7 @@
   ONLY USE THIS ON YOUR SECURE OFFLINE DEVICE. Input is sent only to the local server on this device and is not saved.
   {{/important-callout}}
   {{> server-token}}
+  {{> qr-passphrase}}
   {{> node-settings}}
 
   <section class="part">
@@ -177,6 +178,8 @@ pip3 install -r python/requirements.txt{{/code-block}}
   <h2>Part 4: Transfer the public descriptors to the online device</h2>
   <p><strong>This step is optional.</strong> If the online device already has the public descriptors of your wallet, skip it and continue with the next guide step.</p>
   <p>Otherwise, the script below sends only what the online device cannot work out itself. The descriptors of one wallet share the master fingerprint, and each address type has one account xpub for both its receive and change descriptor. The script writes the 4-byte master fingerprint, one byte that marks which address types follow, and the 78-byte xpub of each type, then encodes those bytes as Base58 and writes them as Super Base 58 lines (see <a href="../intro/index.html">Super Base 58</a>). The online device rebuilds the receive and change descriptors of each type, with their derivation paths and checksums. Never transfer private descriptors: the script refuses them. Running Part 3 fills in the descriptors below, or you can paste your own, one per line. One address type takes 29 lines and each extra type about 27 more, so choose fewer address types in Part 2 if you want fewer lines to type.</p>
+  <p>Instead of lines, the same bytes can be shown as QR codes for the online device's camera. They are encrypted with the QR passphrase at the top of this page and cut into slices of 128 bytes, one QR code each, which the online device puts back together. Choose how to transfer them before or after you run the script.</p>
+  {{> transfer-mode id="descriptors-transfer"}}
 
   <form id="transfer-form" class="phonetic-form" autocomplete="off" novalidate>
     <div class="phonetic-field">
@@ -204,6 +207,7 @@ pip3 install -r python/requirements.txt{{/code-block}}
         <ol class="sb58-lines"></ol>
         <p class="sb58-help">Click here, then press <kbd>Enter</kbd> to move to the next line, <kbd>Shift</kbd>+<kbd>Enter</kbd> to go back. Type each line on the online device, then the final checksum last.</p>
       </div>
+      {{> qr-viewer device="online"}}
     </div>
   </div>
   <p>To run it yourself, save the code as <code>descriptors-to-sb58.py</code> and run it with the environment above active. It reads the public descriptors from standard input:</p>
@@ -212,14 +216,16 @@ pip3 install -r python/requirements.txt{{/code-block}}
 
   <section class="part">
   <h2>Part 5: Receive the transaction from the online device</h2>
-  <p>Type the Super Base 58 (SB58) lines shown in Part 3 of the online device guide, one line per line, then the final checksum on the last line. They hold the unsigned transaction, a PSBT. Once the final checksum matches, Bitcoin Core on this device reads the PSBT and shows where the bitcoin goes, how much and the fee. It asks the wallet named in Part 2 which outputs come back to it as change.</p>
-  <ul>
-    <li>Type each word and press <kbd>Space</kbd>. The word completes from its first letters when only one word starts with them, so <code>x</code> becomes <code>x-ray</code> and <code>sev</code> becomes <code>seven</code>.</li>
-    <li>Each line is 4 words, the casing string such as <code>01101</code>, and the checksum word. Press <kbd>Enter</kbd> after the checksum word to start the next line.</li>
-    <li>The last line is the 5-digit final checksum. Errors name the line to fix.</li>
-  </ul>
+  <p>Type the Super Base 58 (SB58) lines shown in Part 3 of the online device guide, one line per line, then the final checksum on the last line, or scan its encrypted QR codes. Choose the same way as on the online device. They hold the unsigned transaction, a PSBT. Once the final checksum matches or the QR codes are decrypted, Bitcoin Core on this device reads the PSBT and shows where the bitcoin goes, how much and the fee. It asks the wallet named in Part 2 which outputs come back to it as change.</p>
+  {{> transfer-mode id="psbt-transfer"}}
 
   <div id="psbt-receiver">
+    <div class="sb58-receiver">
+    <ul>
+      <li>Type each word and press <kbd>Space</kbd>. The word completes from its first letters when only one word starts with them, so <code>x</code> becomes <code>x-ray</code> and <code>sev</code> becomes <code>seven</code>.</li>
+      <li>Each line is 4 words, the casing string such as <code>01101</code>, and the checksum word. Press <kbd>Enter</kbd> after the checksum word to start the next line.</li>
+      <li>The last line is the 5-digit final checksum. Errors name the line to fix.</li>
+    </ul>
     <div class="sb58-editor">
       <div class="sb58-gutter" aria-hidden="true"></div>
       <textarea class="sb58-input" rows="14" wrap="off" spellcheck="false" autocomplete="off" autocapitalize="off" aria-label="SB58 lines of the transaction" aria-describedby="psbt-sb58-status psbt-sb58-hint psbt-sb58-errors"></textarea>
@@ -233,6 +239,8 @@ pip3 install -r python/requirements.txt{{/code-block}}
       <pre class="sb58-output" tabindex="0"></pre>
       <button type="button" class="sb58-copy">Copy PSBT</button>
     </div>
+    </div>
+    {{> qr-scanner device="online" title="Unsigned transaction (PSBT, base64)" copy="Copy PSBT"}}
   </div>
 
   <p><strong>Check every address and amount below before you sign.</strong> Compare the destination address with the one you meant to pay, character by character.</p>
@@ -252,7 +260,8 @@ pip3 install -r python/requirements.txt{{/code-block}}
   {{#> code-block}}python3 decode-psbt.py --wallet my-wallet --datadir /YOUR/DRIVE{{/code-block}}
 
   <h3>Sign the transaction</h3>
-  <p>When every address and amount above is what you intended, sign the transaction with the wallet named in Part 2. Bitcoin Core signs it with <code>walletprocesspsbt</code>. The online device already has the unsigned transaction, so only the signatures are written as Super Base 58 lines: 4 bytes of the transaction ID, so the online device can tell it is the same transaction, then 64 bytes per input. The online device adds them and sends the transaction. If the wallet cannot sign every input, nothing is shown.</p>
+  <p>When every address and amount above is what you intended, sign the transaction with the wallet named in Part 2. Bitcoin Core signs it with <code>walletprocesspsbt</code>. The online device already has the unsigned transaction, so only the signatures are written as Super Base 58 lines: 4 bytes of the transaction ID, so the online device can tell it is the same transaction, then 64 bytes per input. The online device adds them and sends the transaction. If the wallet cannot sign every input, nothing is shown. They can also be shown as encrypted QR codes instead.</p>
+  {{> transfer-mode id="signatures-transfer"}}
   <div class="notebook-cell" data-script="sign-psbt">
     <div class="notebook-toolbar">
       <button type="button" class="run-button" data-action="run">&#9654; Sign transaction</button>
@@ -272,6 +281,7 @@ pip3 install -r python/requirements.txt{{/code-block}}
         <ol class="sb58-lines"></ol>
         <p class="sb58-help">Click here, then press <kbd>Enter</kbd> to move to the next line, <kbd>Shift</kbd>+<kbd>Enter</kbd> to go back. Type each line on the online device, then the final checksum last.</p>
       </div>
+      {{> qr-viewer device="online"}}
     </div>
   </div>
   <p>To run it yourself, save the code as <code>sign-psbt.py</code> and run it with the environment above active. It reads the PSBT in base64 from standard input:</p>
@@ -284,6 +294,7 @@ pip3 install -r python/requirements.txt{{/code-block}}
 <script src="{{assetsHref}}/node-settings.js" defer></script>
 <script src="{{assetsHref}}/sb58-viewer.js" defer></script>
 <script src="{{assetsHref}}/sb58-receive.js" defer></script>
+<script src="{{assetsHref}}/qr-transfer.js" defer></script>
 <script src="{{assetsHref}}/offline-signing.js" defer></script>
 {{> flow-navigation}}
 {{/layout}}

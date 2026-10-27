@@ -5,6 +5,9 @@
   // The token printed by the server, pasted at the top of the page. Every request sends it.
   const tokenInput = document.querySelector('#server-token');
   const headers = (extra = {}) => ({ ...extra, 'X-Signer-Token': tokenInput?.value.trim() ?? '' });
+  document.querySelector('#show-server-token')?.addEventListener('change', event => {
+    tokenInput.type = event.target.checked ? 'text' : 'password';
+  });
   // A page may show the server status in more than one place, such as two parts that each need the server.
   const setServerStatus = text => document.querySelectorAll('.server-status').forEach(status => { status.textContent = text; });
 
@@ -67,6 +70,28 @@
     setTimeout(() => { if (status.textContent === label) status.textContent = ''; }, 2000);
   }
 
+  // Runs a script listed in python/server.py and returns its result, or throws with the message to show.
+  async function runScript(script, inputs) {
+    let response;
+    try {
+      response = await fetch(`${server}/run`, {
+        method: 'POST',
+        headers: headers({ 'Content-Type': 'application/json' }),
+        cache: 'no-store',
+        body: JSON.stringify({ script, inputs }),
+      });
+    } catch {
+      setServerStatus(notRunning);
+      throw new Error(notRunning);
+    }
+    setServerStatus('Local server is running.');
+    const body = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(body.error ?? `Server returned ${response.status}`);
+    // A data directory that worked is offered again next time.
+    if (inputs.datadir) globalThis.NodeSettings?.remember(inputs.datadir);
+    return body.result;
+  }
+
   let codeBlocks = 0;
   // A cell is a code block with Run and Copy buttons and an output area, like a notebook.
   // collect() returns the script's inputs, show(value) renders its result as text.
@@ -107,24 +132,9 @@
       try {
         let inputs;
         try { inputs = collect(); } catch (error) { return showResult(error.message, true); }
-        let response;
-        try {
-          response = await fetch(`${server}/run`, {
-            method: 'POST',
-            headers: headers({ 'Content-Type': 'application/json' }),
-            cache: 'no-store',
-            body: JSON.stringify({ script: cell.dataset.script, inputs }),
-          });
-        } catch {
-          setServerStatus(notRunning);
-          return showResult(notRunning, true);
-        }
-        setServerStatus('Local server is running.');
-        const body = await response.json().catch(() => ({}));
-        // A data directory that worked is offered again next time.
-        if (response.ok && inputs.datadir) globalThis.NodeSettings?.remember(inputs.datadir);
-        if (response.ok) showResult(show(body.result), false);
-        else showResult(body.error ?? `Server returned ${response.status}`, true);
+        let result;
+        try { result = await runScript(cell.dataset.script, inputs); } catch (error) { return showResult(error.message, true); }
+        showResult(show(result), false);
       } finally {
         status.textContent = '';
         runButton.disabled = false;
@@ -141,5 +151,5 @@
     form.addEventListener('change', clearResult);
   }
 
-  globalThis.Notebook = { setupCell, clearOnEdit, copyText };
+  globalThis.Notebook = { setupCell, clearOnEdit, copyText, runScript };
 })();

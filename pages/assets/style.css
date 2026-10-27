@@ -181,3 +181,16 @@ kbd { padding: .1em .4em; border: 1px solid #a4b29e; border-bottom-width: 2px; b
 .open-localhost { display: inline-block; padding: 9px 16px; border-radius: 5px; background: #304632; color: #fff; font-weight: 600; font-size: 14px; text-decoration: none; white-space: nowrap; }
 .open-localhost:hover { background: #3d5a40; }
 .open-localhost:focus-visible { outline: 2px solid #456850; outline-offset: 3px; }
+.transfer-mode { margin: 20px 0; }
+.qr-viewer { padding: 14px 16px; outline: none; }
+.qr-viewer:focus-visible { box-shadow: inset 0 0 0 2px #456850; }
+.qr-viewer .sb58-header button { min-width: 72px; }
+.qr-image { display: block; width: min(100%, 420px); height: auto; margin: 0 auto; border: 1px solid #e1e4da; border-radius: 6px; background: #fff; image-rendering: pixelated; }
+.qr-status, .qr-scan-status { margin: 10px 0 0; font-size: 14px; color: #60665a; }
+.qr-status.is-error, .qr-scan-status.is-error { color: #a22d20; font-weight: 600; }
+.qr-scanner { margin: 20px 0 8px; }
+.qr-scanner .notebook-toolbar { margin: 16px 0 0; }
+.qr-result { margin-top: 16px; }
+.qr-result pre { margin: 0 0 12px; padding: 14px 16px; border: 1px solid #cbd1c3; border-left: 4px solid #456850; border-radius: 6px; background: #fff; white-space: pre-wrap; overflow-wrap: anywhere; font: 14px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+.qr-result button { cursor: pointer; padding: 8px 14px; border: 1px solid #a4b29e; border-radius: 5px; background: #e8ecdf; color: #233f2a; font: inherit; font-size: 14px; }
+.qr-result button:hover { background: #d7e0ce; }

@@ -86,6 +86,16 @@ SCRIPTS = {
         "required": {"mnemonic"},
         "optional": {"passphrase", "script_types", "wallet", "network"},
     },
+    "qr-encode": {
+        "function": "encode_qr",
+        "required": {"data", "kind", "passphrase"},
+        "optional": set(),
+    },
+    "qr-scan": {
+        "function": "scan_qr",
+        "required": {"kind", "passphrase"},
+        "optional": {"camera"},
+    },
 }
 
 
@@ -138,7 +148,8 @@ def make_handler(port, allowed_origins, token):
           sent = self.headers.get(TOKEN_HEADER, "")
           if hmac.compare_digest(sent.encode(), token.encode()):
               return True
-          reason = "Wrong token" if sent else "Missing token"
+          # Lengths are not secret, and they show a token pasted twice or into a field that was not empty.
+          reason = f"Wrong token ({len(sent)} characters sent, this server's has {len(token)})" if sent else "Missing token"
           print(f"Rejected {self.command} {self.path}: {reason}", file=sys.stderr)
           self.send_json(401, {"error": f"{reason}. Paste the token printed when the server started into the token field at the top of the page."})
           return False

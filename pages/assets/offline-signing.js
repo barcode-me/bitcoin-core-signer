@@ -43,10 +43,10 @@
   // A different wallet name needs its own confirmation.
   wallet.addEventListener('input', () => { confirmDelete.value = ''; clearDelete(); });
 
-  // Part 4: public descriptors -> Super Base 58 lines, shown one at a time
+  // Part 4: public descriptors -> Super Base 58 lines shown one at a time, or encrypted QR codes
   const publicDescriptors = document.querySelector('#public-descriptors');
   const transferCell = document.querySelector('[data-script=descriptors-to-sb58]');
-  const viewer = globalThis.SB58Viewer.setupViewer(transferCell.querySelector('.sb58-viewer'));
+  const viewer = globalThis.QrTransfer.setupSender(document.querySelector('#descriptors-transfer'), transferCell, 'descriptors');
 
   const clearTransfer = setupCell(transferCell, {
     collect: () => {
@@ -55,7 +55,7 @@
       return { descriptors };
     },
     show: encoded => {
-      viewer.show([...encoded.lines, encoded.final_checksum]);
+      viewer.show([...encoded.lines, encoded.final_checksum], encoded.hex);
       return `${encoded.lines.length + 1} lines: ${encoded.lines.length} data lines and the final checksum. They encode the master fingerprint and the xpubs of ${encoded.script_types.join(', ')}: ${encoded.bytes.toLocaleString('en-US')} bytes of data (${encoded.base58_chars.toLocaleString('en-US')} Base58 characters).`;
     },
     clear: viewer.clear,
@@ -136,14 +136,14 @@
     bip39Passphrase.type = event.target.checked ? 'text' : 'password';
   });
 
-  // Part 5: SB58 lines from the online device -> unsigned PSBT -> its outputs and fee, read by Bitcoin Core
+  // Part 5: SB58 lines or QR codes from the online device -> unsigned PSBT -> its outputs and fee, read by Bitcoin Core
   const psbtCell = document.querySelector('[data-script=decode-psbt]');
   const psbtMagic = [0x70, 0x73, 0x62, 0x74, 0xff]; // "psbt" and 0xff
   const btc = sats => `${(sats / 1e8).toFixed(8)} BTC (${sats.toLocaleString('en-US')} sats)`;
   let receivedPsbt = null;
   const clearPsbt = setupCell(psbtCell, {
     collect: () => {
-      if (!receivedPsbt) throw new Error('Type the SB58 lines from the online device above first.');
+      if (!receivedPsbt) throw new Error('Type the SB58 lines or scan the QR codes from the online device above first.');
       const name = wallet.value.trim();
       const datadir = document.querySelector('#datadir').value.trim();
       return { psbt: receivedPsbt, ...(name ? { wallet: name } : {}), ...(datadir ? { datadir } : {}) };
@@ -167,19 +167,19 @@
     },
   });
 
-  // Sign the received PSBT with the Part 2 wallet and show the signed PSBT as SB58 lines for the online device
+  // Sign the received PSBT with the Part 2 wallet and show the signatures as SB58 lines or QR codes for the online device
   const signCell = document.querySelector('[data-script=sign-psbt]');
-  const signViewer = globalThis.SB58Viewer.setupViewer(signCell.querySelector('.sb58-viewer'));
+  const signViewer = globalThis.QrTransfer.setupSender(document.querySelector('#signatures-transfer'), signCell, 'signatures');
   const clearSign = setupCell(signCell, {
     collect: () => {
-      if (!receivedPsbt) throw new Error('Type the SB58 lines from the online device above first.');
+      if (!receivedPsbt) throw new Error('Type the SB58 lines or scan the QR codes from the online device above first.');
       const name = wallet.value.trim();
       if (!name) throw new Error('Enter the name of the wallet that signs in Part 2.');
       const datadir = document.querySelector('#datadir').value.trim();
       return { psbt: receivedPsbt, wallet: name, ...(datadir ? { datadir } : {}) };
     },
     show: signed => {
-      signViewer.show([...signed.lines, signed.final_checksum]);
+      signViewer.show([...signed.lines, signed.final_checksum], signed.hex);
       return `Signed with wallet ${signed.wallet}. ${signed.lines.length + 1} lines: ${signed.lines.length} data lines and the final checksum. They encode ${signed.signatures} ${signed.signatures === 1 ? 'signature' : 'signatures'} of transaction ${signed.txid}: ${signed.bytes.toLocaleString('en-US')} bytes (${signed.base58_chars.toLocaleString('en-US')} Base58 characters).`;
     },
     clear: signViewer.clear,
@@ -187,14 +187,14 @@
   // A different signing wallet needs a new signature.
   wallet.addEventListener('input', clearSign);
 
-  globalThis.SB58.setupEditor(document.querySelector('#psbt-receiver'), {
+  globalThis.QrTransfer.setupReceiver(document.querySelector('#psbt-transfer'), document.querySelector('#psbt-receiver'), 'psbt', {
     decode: bytes => {
-      if (psbtMagic.some((byte, index) => bytes[index] !== byte)) throw new Error('The lines check out but do not hold a PSBT. Check that these are the lines from Part 3 of the online device guide.');
+      if (psbtMagic.some((byte, index) => bytes[index] !== byte)) throw new Error('The data does not hold a PSBT. Check that it is from Part 3 of the online device guide.');
       let binary = '';
       for (const byte of bytes) binary += String.fromCharCode(byte);
       return btoa(binary);
     },
-    show: psbt => ({ text: psbt, status: 'Received the transaction. The final checksum matches.' }),
+    show: psbt => ({ text: psbt, status: 'Received the transaction.' }),
     onChange: psbt => {
       receivedPsbt = psbt;
       clearSign();

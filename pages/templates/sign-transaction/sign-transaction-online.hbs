@@ -3,6 +3,7 @@
 
 <section class="example-section" data-server="http://127.0.0.1:8765" data-home="{{homeHref}}">
   {{> server-token}}
+  {{> qr-passphrase}}
   {{> node-settings}}
 
   <section class="part">
@@ -12,13 +13,18 @@
   <form id="source-form" class="phonetic-form" autocomplete="off" novalidate>
     <fieldset class="field-group">
       <legend>Get the public descriptors by</legend>
-      <label class="choice"><input type="radio" name="source" value="received" checked> Typing the Super Base 58 lines from the offline device</label>
+      <label class="choice"><input type="radio" name="source" value="received" checked> Receiving them from the offline device</label>
       <label class="choice"><input type="radio" name="source" value="wallet"> Loading a wallet that already exists in Bitcoin Core on this device</label>
     </fieldset>
   </form>
 
   <div id="source-received">
-    <p>Type the Super Base 58 (SB58) lines shown in Part 4 of the offline device guide, one line per line, then the final checksum on the last line. This page recovers the public descriptors from them. Input stays on this page and is not sent or saved.</p>
+    <p>Type the Super Base 58 (SB58) lines shown in Part 4 of the offline device guide, or scan its encrypted QR codes. Choose the same way as on the offline device. This page recovers the public descriptors from them.</p>
+    {{> transfer-mode id="descriptors-transfer"}}
+
+    <div id="descriptor-receiver">
+    <div class="sb58-receiver">
+    <p>Type the lines one line per line, then the final checksum on the last line. Input stays on this page and is not sent or saved.</p>
     <ul>
       <li>Type each word and press <kbd>Space</kbd>. The word completes from its first letters when only one word starts with them, so <code>x</code> becomes <code>x-ray</code> and <code>sev</code> becomes <code>seven</code>.</li>
       <li>A few letters are shared by several words (<code>t</code> is tango, two or three), so type enough letters to tell them apart. The page tells you when it cannot complete a word.</li>
@@ -26,7 +32,6 @@
       <li>The last line is the 5-digit final checksum. Errors name the line to fix.</li>
     </ul>
 
-    <div id="descriptor-receiver">
       <div class="sb58-editor">
         <div class="sb58-gutter" aria-hidden="true"></div>
         <textarea class="sb58-input" rows="14" wrap="off" spellcheck="false" autocomplete="off" autocapitalize="off" aria-label="SB58 lines" aria-describedby="sb58-status sb58-hint sb58-errors"></textarea>
@@ -40,6 +45,8 @@
         <pre class="sb58-output" tabindex="0"></pre>
         <button type="button" class="sb58-copy">Copy public descriptors</button>
       </div>
+    </div>
+    {{> qr-scanner device="offline" title="Public descriptors" copy="Copy public descriptors"}}
     </div>
   </div>
 
@@ -130,7 +137,7 @@ python3 python/server.py{{/code-block}}
 
   <section class="part">
   <h2>Part 3: Create the transaction and transfer it to the offline device</h2>
-  <p>This asks Bitcoin Core to create an unsigned transaction, a PSBT, from the watch-only wallet with <code>walletcreatefundedpsbt</code>. Bitcoin Core chooses the coins to spend and sends the change back to the wallet, to the address type chosen in Part 1. Nothing is signed or sent: only the offline device can sign it. The PSBT is then written as Super Base 58 lines to type on the offline device (see <a href="../intro/index.html">Super Base 58</a>).</p>
+  <p>This asks Bitcoin Core to create an unsigned transaction, a PSBT, from the watch-only wallet with <code>walletcreatefundedpsbt</code>. Bitcoin Core chooses the coins to spend and sends the change back to the wallet, to the address type chosen in Part 1. Nothing is signed or sent: only the offline device can sign it. The PSBT is then written as Super Base 58 lines to type on the offline device (see <a href="../intro/index.html">Super Base 58</a>), or as QR codes for its camera, encrypted with the QR passphrase at the top of this page and cut into slices of 128 bytes, one QR code each.</p>
   <p>Check the destination address carefully, character by character. Bitcoin cannot be recovered once the signed transaction is sent.</p>
 
   <form id="psbt-form" class="phonetic-form" autocomplete="off" novalidate>
@@ -161,6 +168,7 @@ python3 python/server.py{{/code-block}}
     </fieldset>
   </form>
 
+  {{> transfer-mode id="psbt-transfer"}}
   <div class="notebook-cell" data-script="create-psbt">
     <div class="notebook-toolbar">
       <button type="button" class="run-button" data-action="run">&#9654; Create transaction</button>
@@ -180,6 +188,7 @@ python3 python/server.py{{/code-block}}
         <ol class="sb58-lines"></ol>
         <p class="sb58-help">Click here, then press <kbd>Enter</kbd> to move to the next line, <kbd>Shift</kbd>+<kbd>Enter</kbd> to go back. Type each line on the offline device, then the final checksum last.</p>
       </div>
+      {{> qr-viewer device="offline"}}
     </div>
   </div>
   <p>To run it yourself, save the code as <code>create-psbt.py</code> and run it with the environment above active. It prints the PSBT in base64 and as SB58 lines:</p>
@@ -195,14 +204,16 @@ python3 python/server.py{{/code-block}}
       <textarea id="unsigned-psbt" rows="4" spellcheck="false" autocomplete="off" autocapitalize="off"></textarea>
     </div>
   </form>
-  <p>Type the Super Base 58 (SB58) lines shown after signing in Part 5 of the offline device guide, one line per line, then the final checksum on the last line. Once the final checksum matches, the signatures are added and Bitcoin Core checks them with <code>testmempoolaccept</code>, then shows where the bitcoin goes, how much and the fee, so you can check them one last time before sending.</p>
-  <ul>
-    <li>Type each word and press <kbd>Space</kbd>. The word completes from its first letters when only one word starts with them.</li>
-    <li>Each line is 4 words, the casing string such as <code>01101</code>, and the checksum word. Press <kbd>Enter</kbd> after the checksum word to start the next line.</li>
-    <li>The last line is the 5-digit final checksum. Errors name the line to fix.</li>
-  </ul>
+  <p>Type the Super Base 58 (SB58) lines shown after signing in Part 5 of the offline device guide, one line per line, then the final checksum on the last line, or scan its encrypted QR codes. Choose the same way as on the offline device. Once the final checksum matches or the QR codes are decrypted, the signatures are added and Bitcoin Core checks them with <code>testmempoolaccept</code>, then shows where the bitcoin goes, how much and the fee, so you can check them one last time before sending.</p>
+  {{> transfer-mode id="signatures-transfer"}}
 
   <div id="signed-receiver">
+    <div class="sb58-receiver">
+    <ul>
+      <li>Type each word and press <kbd>Space</kbd>. The word completes from its first letters when only one word starts with them.</li>
+      <li>Each line is 4 words, the casing string such as <code>01101</code>, and the checksum word. Press <kbd>Enter</kbd> after the checksum word to start the next line.</li>
+      <li>The last line is the 5-digit final checksum. Errors name the line to fix.</li>
+    </ul>
     <div class="sb58-editor">
       <div class="sb58-gutter" aria-hidden="true"></div>
       <textarea class="sb58-input" rows="14" wrap="off" spellcheck="false" autocomplete="off" autocapitalize="off" aria-label="SB58 lines of the signatures" aria-describedby="signed-sb58-status signed-sb58-hint signed-sb58-errors"></textarea>
@@ -216,6 +227,8 @@ python3 python/server.py{{/code-block}}
       <pre class="sb58-output" tabindex="0"></pre>
       <button type="button" class="sb58-copy">Copy signatures</button>
     </div>
+    </div>
+    {{> qr-scanner device="offline" title="Signatures (hex)" copy="Copy signatures"}}
   </div>
 
   <div class="notebook-cell" data-script="add-signatures">
@@ -273,6 +286,7 @@ python3 python/server.py{{/code-block}}
 <script src="{{assetsHref}}/node-settings.js" defer></script>
 <script src="{{assetsHref}}/sb58-viewer.js" defer></script>
 <script src="{{assetsHref}}/sb58-receive.js" defer></script>
+<script src="{{assetsHref}}/qr-transfer.js" defer></script>
 <script src="{{assetsHref}}/online-signing.js" defer></script>
 {{> flow-navigation}}
 {{/layout}}
