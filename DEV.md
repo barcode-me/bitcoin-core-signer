@@ -67,8 +67,6 @@ The wrapper, accessible caption, and language class are defined once in `pages/t
 
 `pages/templates/shared/` contains the common layout, flow header, Back/Next navigation, code block, and IMPORTANT callout. Both flows use these partials.
 
-Recovery steps live in `pages/templates/recover-from-backup/`, with their order and titles in `steps.json`. Add a matching `.hbs` template for each step, using `flow-header` and `flow-navigation` just as in the backup flow. Both Contents lists and navigation update automatically. Recovery currently has one Recovery step linking to the relevant setup and wallet recovery instructions. More steps can be added to its steps.json without changing the build script.
-
 ## Python scripts
 
 The lean flow's scripts live in `python/lean/` and run in a terminal; the pages only show the commands. Third-party packages go in `python/requirements.txt`. Set up the environment with `python3 -m venv python/venv`, `source python/venv/bin/activate` and `pip3 install -r python/requirements.txt`. `python/venv/` is git-ignored.

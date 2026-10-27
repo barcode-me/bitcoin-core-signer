@@ -1,0 +1,22 @@
+{{#> layout}}
+<p class="eyebrow">TOOL</p>
+<h1>QR Transfer</h1>
+
+<section class="example-section">
+  <p>Send any data from one device to another as a series of QR codes: one device shows them on its screen, the other scans them with its camera. Nothing is encrypted, so anyone who sees the codes can read the data.</p>
+  <h2>How it works</h2>
+  <p><code>qr-encode.py</code> cuts the data into chunks of 64 bytes and shows one QR code per chunk in a window, looping. <code>qr-scan.py</code> reads them with the camera in any order and joins them back together, checking the result against the first 8 hex characters of the data's SHA-256.</p>
+  <p>Install the dependencies in <code>python/requirements.txt</code> on both devices before going offline: <code>qrcode[pil]</code> to make the codes, and <code>opencv-python</code> to show and scan them.</p>
+  {{#> code-block}}python3 -m venv python/venv
+source python/venv/bin/activate
+pip3 install -r python/requirements.txt{{/code-block}}
+</section>
+
+<section class="part">
+  <h2>Send and receive</h2>
+  <p>On the sending device, show a file's QR codes. Leave out the file to paste the data instead, then press <kbd>Ctrl</kbd>+<kbd>D</kbd>:</p>
+  {{#> code-block}}python3 python/lean/qr-encode.py data.txt{{/code-block}}
+  <p>On the receiving device, hold the camera to the screen until every code is read:</p>
+  {{#> code-block}}python3 python/lean/qr-scan.py --out data.txt{{/code-block}}
+</section>
+{{/layout}}

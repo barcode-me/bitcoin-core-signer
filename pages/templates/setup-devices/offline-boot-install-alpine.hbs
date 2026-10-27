@@ -42,16 +42,14 @@ reboot
 apk add git bitcoin bitcoin-cli
 
 cd ~/Downloads
-git clone https://github.com/barcode-me/bip39-to-bitcoin-core
-cd bip39-to-bitcoin-core
+git clone https://github.com/barcode-me/bitcoin-core-signer.git
+cd bitcoin-core-signer/python
 python3 -m venv venv
 source venv/bin/activate
 pip3 install -r requirements.txt
 
-lbu add ~/bip39-to-bitcoin-core # to persist a custom directory to the USB
+lbu add ~/bitcoin-core-signer # to persist a custom directory to the USB
 lbu commit -d
-
-reboot
 {{/code-block}}
 <p>To scan QR codes, the scripts read the camera with OpenCV. If pip cannot install <code>opencv-python</code> on Alpine, install Alpine's own package and let the environment use it, then install the rest of the requirements:</p>
 {{#> code-block}}apk add py3-opencv

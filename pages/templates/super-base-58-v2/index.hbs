@@ -1,9 +1,9 @@
 {{#> layout}}
 <p class="eyebrow">TOOL</p>
 <h1>Super Base 58 v2</h1>
-<p class="lead">Send any text from one device to another by reading lowercase Base58 groups on one screen and typing them on the other. Everything runs in this page; nothing is sent or saved.</p>
 
 <section class="example-section">
+  <p>Send any text from one device to another by reading lowercase Base58 groups on one screen and typing them on the other. Everything runs in this page; nothing is sent or saved.</p>
   <h2>How it works</h2>
   <p>SB58 v2 drops the phonetic words of <a href="../super-base-58/index.html">Super Base 58</a> and shows the Base58 text itself, all in lowercase and in groups of 4 characters. Base58 needs its casing, so each group is followed by one hex character holding 4 casing bits, one per character from the top bit down: an uppercase letter is 1, a lowercase letter or a number is 0. The Base58 group <code>7CTb</code> is written <code>7ctb6</code>, since its bits are <code>0110</code>. A shorter last group pads the remaining bits with 0. Everything can be typed in lowercase.</p>
   <p>Then there are checksums. After every 25 groups (100 Base58 characters), or fewer for the last block, comes a block checksum: the last two bytes of the SHA-256 hash of those groups as typed, casing characters included, in lowercase and without spaces, as 4 hex characters. Each block is checked as soon as it is typed, casing included. At the very end comes the final checksum: the last two bytes of the SHA-256 hash of the data itself, the bytes the Base58 text decodes to, as 4 hex characters. It catches missing or reordered blocks.</p>

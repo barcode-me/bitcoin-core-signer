@@ -11,10 +11,10 @@ const sections = [
   { slug: 'create-wallet', title: 'Create Wallet', description: 'Create a wallet securely and privatetly.' },
   { slug: 'sign-transaction', title: 'Sign Transaction', description: 'How to sign a transaction in Bitcoin Core with BIP39.' },
   { slug: 'transport-backup', title: 'Transport Backup', description: 'How to transport backups securely and privately.' },
-  { slug: 'recover-from-backup', title: 'Recover from backup', description: 'Restore your wallet and verify recovery.' },
   { slug: 'encrypt-your-backups', title: 'Encrypt your backups', description: 'Encrypt a seed phrase or extended private key backup.' },
   { slug: 'super-base-58', title: 'Super Base 58', description: 'Send text between devices as lines typed by hand.', standalone: true },
   { slug: 'super-base-58-v2', title: 'Super Base 58 v2', description: 'Send text between devices as lowercase Base58 typed by hand.', standalone: true },
+  { slug: 'qr-transfer', title: 'QR Transfer', description: 'Send any data between devices as a series of QR codes.', standalone: true },
   { slug: 'faq', title: 'FAQ', description: 'Frequently asked questions.', standalone: true },
 ];
 for (const section of sections) {
