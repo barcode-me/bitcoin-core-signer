@@ -11,7 +11,10 @@
     "scripts": {
       "listPublicDescriptors": "python/list-public-descriptors.py",
       "importPublicDescriptors": "python/import-public-descriptors.py",
-      "createPsbt": "python/create-psbt.py"
+      "createPsbt": "python/create-psbt.py",
+      "addSignatures": "python/add-signatures.py",
+      "decodePsbt": "python/decode-psbt.py",
+      "sendPsbt": "python/send-psbt.py"
     }
   },
   {

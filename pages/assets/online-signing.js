@@ -142,7 +142,7 @@
       const rescanSince = document.querySelector('#rescan-since').value;
       const datadir = document.querySelector('#datadir').value.trim();
       const createWallet = document.querySelector('#create-wallet').checked;
-      return { wallet, descriptors: received, create_wallet: createWallet, ...(rescanSince ? { rescan_since: rescanSince } : {}), ...(datadir ? { datadir } : {}) };
+      return { wallet, descriptors: received, create_wallet: createWallet, network: document.querySelector('#network').value, ...(rescanSince ? { rescan_since: rescanSince } : {}), ...(datadir ? { datadir } : {}) };
     },
     show: imported => {
       const scanned = imported.rescan_since ? `Scanned the blockchain from ${imported.rescan_since}.` : 'No past transactions were looked for.';
@@ -184,6 +184,9 @@
     },
     show: created => {
       psbtViewer.show([...created.lines, created.final_checksum]);
+      // Part 4 adds the signatures to this transaction.
+      document.querySelector('#unsigned-psbt').value = created.psbt;
+      document.querySelector('#unsigned-form').dispatchEvent(new Event('input'));
       const received = created.subtract_fee ? created.amount_sats - created.fee_sats : created.amount_sats;
       return [
         `To:       ${created.address}`,
@@ -192,6 +195,9 @@
         `Change:   ${created.has_change ? 'yes, back to this wallet' : 'none'}`,
         '',
         `${created.lines.length + 1} lines: ${created.lines.length} data lines and the final checksum. They encode the ${created.bytes.toLocaleString('en-US')}-byte PSBT (${created.base58_chars.toLocaleString('en-US')} Base58 characters).`,
+        '',
+        'Unsigned PSBT (base64). Part 4 needs it to add the signatures. Save it if you might reload this page before then:',
+        created.psbt,
       ].join('\n');
     },
     clear: psbtViewer.clear,
@@ -199,7 +205,96 @@
   clearOnEdit(psbtForm, clearPsbt);
   // Change goes to the address type chosen in Part 1, so a new choice makes the transaction stale.
   document.addEventListener('signer-state', clearPsbt);
+  // Part 4: SB58 lines from the offline device -> signatures -> added to the Part 3 PSBT -> its details -> sent with Bitcoin Core
+  const unsignedPsbt = document.querySelector('#unsigned-psbt');
+  const addCell = document.querySelector('[data-script=add-signatures]');
+  const signedDetailsCell = document.querySelector('#signed-details');
+  const sendCell = document.querySelector('[data-script=send-psbt]');
+  const confirmSend = document.querySelector('#confirm-send');
+  // 4 bytes of the transaction ID, then 64 bytes per input, as in python/sign-psbt.py.
+  const txidPrefixLength = 4;
+  const signatureLength = 64;
+  const btc = value => `${(value / 1e8).toFixed(8)} BTC (${value.toLocaleString('en-US')} sats)`;
+  let signatures = null; // hex, from the typed SB58 lines
+  let signedPsbt = null;  // the Part 3 PSBT with the signatures added, finalized
+  const clearSignedDetails = setupCell(signedDetailsCell, {
+    collect: () => {
+      if (!signedPsbt) throw new Error('Type the SB58 lines from the offline device above and add the signatures first.');
+      const wallet = psbtWallet.value.trim();
+      const datadir = document.querySelector('#datadir').value.trim();
+      return { psbt: signedPsbt, ...(wallet ? { wallet } : {}), ...(datadir ? { datadir } : {}) };
+    },
+    show: decoded => {
+      const lines = decoded.outputs.map(output => {
+        const note = output.is_mine ? `  (change, back to wallet ${decoded.wallet})` : '';
+        return `  ${btc(output.amount_sats)} to ${output.address ?? '(an output without an address)'}${note}`;
+      });
+      const sent = decoded.outputs.filter(output => !output.is_mine).reduce((sum, output) => sum + output.amount_sats, 0);
+      const fee = decoded.fee_sats === null ? 'unknown, the PSBT does not include the coins it spends' : `${btc(decoded.fee_sats)}, ${decoded.fee_rate} sat/vB`;
+      return [
+        'Outputs:', ...lines, '',
+        decoded.wallet ? `Sent out of the wallet: ${btc(sent)}` : 'Enter the wallet name in Part 3 to tell the change apart.',
+        `Fee: ${fee}`,
+        `Inputs: ${decoded.inputs}`,
+        `Status: ${decoded.status}`,
+        `Transaction ID: ${decoded.txid}`,
+      ].join('\n');
+    },
+  });
+  const clearSend = setupCell(sendCell, {
+    collect: () => {
+      if (!signedPsbt) throw new Error('Type the SB58 lines from the offline device above and add the signatures first.');
+      if (!confirmSend.checked) throw new Error('Check the transaction details, then tick the box above to confirm. Nothing was sent.');
+      const datadir = document.querySelector('#datadir').value.trim();
+      return { psbt: signedPsbt, ...(datadir ? { datadir } : {}) };
+    },
+    show: sent => {
+      // One confirmation sends once.
+      confirmSend.checked = false;
+      return `Sent. Transaction ID: ${sent.txid}\nBitcoin Core will show it in the wallet as unconfirmed until it is mined into a block.`;
+    },
+  });
+  const clearAdd = setupCell(addCell, {
+    collect: () => {
+      const psbt = unsignedPsbt.value.trim();
+      if (!psbt) throw new Error('Create the transaction in Part 3, or paste the unsigned PSBT it showed above.');
+      if (!signatures) throw new Error('Type the SB58 lines from the offline device above first.');
+      const datadir = document.querySelector('#datadir').value.trim();
+      return { psbt, signatures, ...(datadir ? { datadir } : {}) };
+    },
+    show: added => {
+      signedPsbt = added.psbt;
+      // Show the details as soon as the signatures are added.
+      signedDetailsCell.querySelector('[data-action=run]').click();
+      return `Added the signatures to transaction ${added.txid}. Bitcoin Core checked them with testmempoolaccept: it would accept this transaction.\n\nSigned PSBT (base64):\n${added.psbt}`;
+    },
+    clear: () => {
+      signedPsbt = null;
+      confirmSend.checked = false;
+      clearSignedDetails();
+      clearSend();
+    },
+  });
+  // Signatures only fit the unsigned transaction they were made for.
+  clearOnEdit(document.querySelector('#unsigned-form'), clearAdd);
+
+  globalThis.SB58.setupEditor(document.querySelector('#signed-receiver'), {
+    decode: bytes => {
+      const count = (bytes.length - txidPrefixLength) / signatureLength;
+      if (!Number.isInteger(count) || count < 1) throw new Error('The lines check out but do not hold signatures. Check that these are the lines shown after signing on the offline device.');
+      return [...bytes].map(byte => byte.toString(16).padStart(2, '0')).join('');
+    },
+    show: hex => {
+      const count = (hex.length / 2 - txidPrefixLength) / signatureLength;
+      return { text: hex, status: `Received ${count} ${count === 1 ? 'signature' : 'signatures'}. The final checksum matches.` };
+    },
+    onChange: hex => {
+      signatures = hex;
+      if (hex) addCell.querySelector('[data-action=run]').click(); else clearAdd();
+    },
+  });
+
   // Every part runs bitcoin-cli with the data directory at the top, so a new one makes their results stale.
-  clearOnEdit(document.querySelector('#datadir-form'), () => { clearWallet(); clearImport(); clearPsbt(); });
+  clearOnEdit(document.querySelector('#datadir-form'), () => { clearWallet(); clearImport(); clearPsbt(); clearAdd(); });
   apply();
 })();

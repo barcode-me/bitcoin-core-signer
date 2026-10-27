@@ -8,7 +8,8 @@ keys, make sure you can restore it from your backup.
 Safety checks, in order: Bitcoin Core must be running and list a wallet with this
 name, the folder must be a real folder directly inside the wallets directory, and
 it may only contain known wallet files. If anything else is in it, nothing is
-deleted. Only mainnet in the default wallets directory is supported.
+deleted. Only the default wallets directory is supported: <data directory>/wallets
+on mainnet, or <data directory>/<network>/wallets on a test network.
 """
 import argparse
 import json
@@ -21,6 +22,8 @@ BITCOIN_CLI = "bitcoin-cli"
 TIMEOUT_SECONDS = 120
 WALLET_NAME = re.compile(r"[A-Za-z0-9._-]+")
 WALLET_NOT_LOADED = "error code: -18"
+# Bitcoin Core chain name -> folder of that network inside the data directory
+CHAIN_FOLDERS = {"main": "", "test": "testnet3", "testnet4": "testnet4", "signet": "signet", "regtest": "regtest"}
 WALLET_FILES = {"wallet.dat", "wallet.dat-journal", "wallet.dat-shm", "wallet.dat-wal", ".walletlock", "db.log"}
 
 
@@ -73,7 +76,12 @@ def delete_wallet(wallet, confirm, datadir=None):
   if wallet not in {item["name"] for item in listed["wallets"]}:
       raise ValueError(f"Bitcoin Core has no wallet named {wallet}")
 
-  wallets_dir = (Path(datadir).expanduser() if datadir else default_datadir()) / "wallets"
+  output = run_cli(["getblockchaininfo"], datadir)
+  try:
+      chain_folder = CHAIN_FOLDERS[json.loads(output)["chain"]]
+  except (ValueError, KeyError):
+      raise ValueError(f"Unexpected output from {BITCOIN_CLI}")
+  wallets_dir = (Path(datadir).expanduser() if datadir else default_datadir()) / chain_folder / "wallets"
   target = wallets_dir / wallet
   if not wallets_dir.is_dir() or not target.exists():
       raise ValueError(

@@ -91,7 +91,9 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fo
 .phonetic-field { position: relative; margin: 0 0 20px; }
 .phonetic-form label { display: block; font-size: 14px; font-weight: 600; margin-bottom: 7px; }
 .phonetic-form input, .phonetic-form textarea { box-sizing: border-box; width: 100%; padding: 12px; border: 1px solid #a4b29e; border-radius: 5px; background: #fff; color: #202923; font: 15px ui-monospace, monospace; }
-.phonetic-form input:focus { outline: 2px solid #456850; outline-offset: 2px; }
+.phonetic-form select { box-sizing: border-box; width: 100%; padding: 12px; border: 1px solid #a4b29e; border-radius: 5px; background: #fff; color: #202923; font: inherit; }
+.phonetic-form .datadir-path { margin-top: 8px; }
+.phonetic-form input:focus, .phonetic-form select:focus { outline: 2px solid #456850; outline-offset: 2px; }
 .phonetic-form button { cursor: pointer; padding: 10px 14px; border: 1px solid #a4b29e; border-radius: 5px; background: #e8ecdf; color: #233f2a; font: inherit; }
 .phonetic-form button:hover { background: #d7e0ce; }
 

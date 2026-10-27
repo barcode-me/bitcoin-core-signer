@@ -1,0 +1,21 @@
+<form id="datadir-form" class="phonetic-form" autocomplete="off" novalidate>
+  <div class="phonetic-field">
+    <label for="network">Bitcoin network</label>
+    <select id="network">
+      <option value="main" selected>Mainnet (real bitcoin)</option>
+      <option value="signet">Signet (test network)</option>
+      <option value="testnet4">Testnet4 (test network)</option>
+      <option value="test">Testnet3 (test network)</option>
+      <option value="regtest">Regtest (local test network)</option>
+    </select>
+  </div>
+  <div class="phonetic-field">
+    <label for="datadir-choice">Bitcoin Core data directory</label>
+    <select id="datadir-choice">
+      <option data-kind="default">Default (Bitcoin Core's own)</option>
+      <option data-kind="new">New path…</option>
+    </select>
+    <input id="datadir" class="datadir-path" placeholder="e.g. /YOUR/DRIVE" spellcheck="false" autocomplete="off" autocapitalize="off" aria-label="New data directory path" hidden>
+  </div>
+  <p>Every part of this page that runs <code>bitcoin-cli</code> uses this directory. Choose Default if you started Bitcoin Core without <code>-datadir</code>, or New path to type one. Paths that worked are remembered in this browser and offered here next time. Choose the network Bitcoin Core runs on, set with <code>-signet</code>, <code>-testnet4</code>, <code>-testnet</code> or <code>-regtest</code>, or in its <code>bitcoin.conf</code>. Test networks use test keys (tprv and tpub) and coin type 1h in the derivation paths. Use the same network on both devices.</p>
+</form>

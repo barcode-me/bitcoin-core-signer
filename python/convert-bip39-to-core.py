@@ -2,6 +2,9 @@
 """
 BIP39 mnemonic + passphrase -> xprv descriptors for Bitcoin Core.
 Run this offline, because the output contains private keys.
+
+On a test network (testnet, signet, regtest) the keys are tprv and the BIP44 coin
+type in the path is 1h instead of 0h, as Bitcoin Core expects there.
 """
 import argparse
 import json
@@ -42,7 +45,11 @@ SCRIPT_TYPES = [
 ]
 
 
-def convert_to_core(mnemonic, passphrase="", script_types=None, wallet="my-wallet"):
+# Bitcoin Core chain names. Every test network uses the same key versions and coin type.
+NETWORK_NAMES = {"main", "test", "testnet4", "signet", "regtest"}
+
+
+def convert_to_core(mnemonic, passphrase="", script_types=None, wallet="my-wallet", network="main"):
   mnemonic = " ".join(mnemonic.strip().lower().split())
   if not bip39.mnemonic_is_valid(mnemonic):
     raise ValueError("Invalid BIP39 mnemonic (bad word or checksum)")
@@ -58,7 +65,10 @@ def convert_to_core(mnemonic, passphrase="", script_types=None, wallet="my-walle
   if not re.fullmatch(r"[A-Za-z0-9._-]+", wallet):
     raise ValueError("Wallet name may only contain letters, digits, dots, dashes and underscores")
 
-  net = NETWORKS["main"]
+  if network not in NETWORK_NAMES:
+    raise ValueError(f"Unknown network: {network}")
+  net = NETWORKS["main" if network == "main" else "test"]
+  coin_type = "0h" if network == "main" else "1h"
   seed_no_passphrase = bip39.mnemonic_to_seed(mnemonic, password="")
   root_no_passphrase = bip32.HDKey.from_seed(seed_no_passphrase, version=net["xprv"])
 
@@ -72,7 +82,7 @@ def convert_to_core(mnemonic, passphrase="", script_types=None, wallet="my-walle
     # Same form as Bitcoin Core's own `listdescriptors true`: master xprv followed by the full path
     receive, change = (
       add_checksum(str(Descriptor.from_string(
-        script_type["wrap"].format(f"{master_xprv}/{script_type['purpose']}/0h/0h/{branch}/*")
+        script_type["wrap"].format(f"{master_xprv}/{script_type['purpose']}/{coin_type}/0h/{branch}/*")
       )))
       for branch in (0, 1)
     )
@@ -115,6 +125,12 @@ def main():
     default="my-wallet",
     help="Wallet name used in the --bitcoin-core command (default: my-wallet)",
   )
+  parser.add_argument(
+    "--network",
+    choices=sorted(NETWORK_NAMES),
+    default="main",
+    help="Bitcoin network, as Bitcoin Core names it (default: main)",
+  )
   args = parser.parse_args()
   out = sys.stderr if args.bitcoin_core else sys.stdout
 
@@ -137,7 +153,7 @@ def main():
 
   try:
     converted = convert_to_core(
-      mnemonic, passphrase, None if args.type == "all" else [args.type], args.wallet
+      mnemonic, passphrase, None if args.type == "all" else [args.type], args.wallet, args.network
     )
   except ValueError as error:
     raise SystemExit(str(error))

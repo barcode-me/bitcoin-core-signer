@@ -12,7 +12,9 @@ The address type byte has one bit per type: 1 = Legacy (pkh, 44h), 2 = Nested
 SegWit (sh(wpkh), 49h), 4 = Native SegWit (wpkh, 84h), 8 = Taproot (tr, 86h). The
 xpubs follow in that order, as their 78 bytes without the Base58Check checksum.
 The other device rebuilds the receive and change descriptors of each type, with
-the path <purpose>/0h/0h, and their checksums.
+the path <purpose>/0h/0h, and their checksums. On a test network the xpubs are
+tpubs and the path is <purpose>/1h/0h. The xpub's version bytes tell which, so
+the other device knows the network too.
 
 The bytes are encoded as Base58. Every 4 Base58 characters make one line:
 
@@ -52,12 +54,13 @@ SCRIPT_TYPES = [
     (4, "Native SegWit (P2WPKH)", "wpkh(", "84"),
     (8, "Taproot (P2TR)", "tr(", "86"),
 ]
-XPUB_VERSION = bytes.fromhex("0488b21e")
+# xpub version -> BIP44 coin type: mainnet xpub, or tpub on every test network
+XPUB_COIN_TYPES = {bytes.fromhex("0488b21e"): "0", bytes.fromhex("043587cf"): "1"}
 ACCOUNT_CHILD = (0x80000000).to_bytes(4, "big")
 # wpkh([d34db33f/84h/0h/0h]xpub.../0/*)#checksum, as listed by Bitcoin Core. ' is accepted for h.
 DESCRIPTOR = re.compile(
-    r"(pkh\(|sh\(wpkh\(|wpkh\(|tr\()\[([0-9a-f]{8})/(\d+)[h']/0[h']/0[h']\]"
-    r"(xpub[1-9A-HJ-NP-Za-km-z]+)/([01])/\*(\)+)#([a-z0-9]{8})"
+    r"(pkh\(|sh\(wpkh\(|wpkh\(|tr\()\[([0-9a-f]{8})/(\d+)[h']/([01])[h']/0[h']\]"
+    r"([xt]pub[1-9A-HJ-NP-Za-km-z]+)/([01])/\*(\)+)#([a-z0-9]{8})"
 )
 CHECKSUM_INPUT = "0123456789()[],'/*abcdefgh@:$%{}IJKLMNOPQRSTUVWXYZ&+-.;<=>?!^_|~ijklmnopqrstuvwxyzABCDEFGH`#\"\\ "
 CHECKSUM_CHARS = "qpzry9x8gf2tvdw0s3jn54khce6mua7l"
@@ -115,8 +118,8 @@ def xpub_bytes(xpub):
   payload, check = data[:-4], data[-4:]
   if len(payload) != 78 or hashlib.sha256(hashlib.sha256(payload).digest()).digest()[:4] != check:
       raise ValueError(f"{xpub[:12]}… is not a valid xpub. Check that it was copied completely")
-  if payload[:4] != XPUB_VERSION or payload[4] != 3 or payload[9:13] != ACCOUNT_CHILD or payload[45] not in (2, 3):
-      raise ValueError(f"{xpub[:12]}… is not a mainnet account xpub at <purpose>/0h/0h")
+  if payload[:4] not in XPUB_COIN_TYPES or payload[4] != 3 or payload[9:13] != ACCOUNT_CHILD or payload[45] not in (2, 3):
+      raise ValueError(f"{xpub[:12]}… is not an account xpub or tpub at <purpose>/<coin type>/0h")
   return payload
 
 
@@ -143,9 +146,9 @@ def compact_descriptors(descriptors):
       if not match:
           raise ValueError(
               f"Descriptor {number} is not a single-key wallet descriptor like "
-              "wpkh([fingerprint/84h/0h/0h]xpub.../0/*)#checksum"
+              "wpkh([fingerprint/84h/0h/0h]xpub.../0/*)#checksum, or tpub with 1h on a test network"
           )
-      start, descriptor_fingerprint, purpose, xpub, _, closing, checksum = match.groups()
+      start, descriptor_fingerprint, purpose, coin_type, xpub, _, closing, checksum = match.groups()
       script_type = next((t for t in SCRIPT_TYPES if t[2] == start and t[3] == purpose), None)
       if script_type is None or closing != ")" * start.count("("):
           raise ValueError(f"Descriptor {number} does not use a standard path for its address type, such as 84h for wpkh")
@@ -155,6 +158,10 @@ def compact_descriptors(descriptors):
           raise ValueError("The descriptors have different master fingerprints. Only transfer the descriptors of one wallet")
       fingerprint = descriptor_fingerprint
       key = xpub_bytes(xpub)
+      if XPUB_COIN_TYPES[key[:4]] != coin_type:
+          raise ValueError(f"Descriptor {number} uses coin type {coin_type}h, but its key is for {'mainnet' if coin_type == '1' else 'a test network'}")
+      if xpubs and next(iter(xpubs.values()))[:4] != key[:4]:
+          raise ValueError("The descriptors mix mainnet and test network keys. Only transfer the descriptors of one wallet")
       if xpubs.get(script_type[0], key) != key:
           raise ValueError(f"The {script_type[1]} descriptors have different xpubs. Only transfer the descriptors of one wallet")
       xpubs[script_type[0]] = key

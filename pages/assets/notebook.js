@@ -117,6 +117,8 @@
         }
         setServerStatus('Local server is running.');
         const body = await response.json().catch(() => ({}));
+        // A data directory that worked is offered again next time.
+        if (response.ok && inputs.datadir) globalThis.NodeSettings?.remember(inputs.datadir);
         if (response.ok) showResult(show(body.result), false);
         else showResult(body.error ?? `Server returned ${response.status}`, true);
       } finally {

@@ -121,6 +121,8 @@
     { bit: 8, wrap: key => `tr(${key})`, purpose: '86h' },
   ];
   const xpubLength = 78;
+  // xpub version -> BIP44 coin type: mainnet xpub, or tpub on every test network
+  const coinTypes = { '0488b21e': '0h', '043587cf': '1h' };
   const hex = bytes => [...bytes].map(byte => byte.toString(16).padStart(2, '0')).join('');
 
   function base58Encode(bytes) {
@@ -172,15 +174,16 @@
     }
     const origin = hex(data.slice(0, 4));
     const descriptors = [];
+    const version = hex(data.slice(5, 9));
     for (const [index, type] of types.entries()) {
       const key = data.slice(5 + index * xpubLength, 5 + (index + 1) * xpubLength);
-      // Mainnet xpub version, depth 3, account 0h, compressed public key.
-      if (hex(key.slice(0, 5)) !== '0488b21e03' || hex(key.slice(9, 13)) !== '80000000' || ![2, 3].includes(key[45])) {
-        throw new Error('The data checks out but does not hold mainnet account xpubs.');
+      // xpub or tpub version (the same for every key), depth 3, account 0h, compressed public key.
+      if (!coinTypes[version] || hex(key.slice(0, 4)) !== version || key[4] !== 3 || hex(key.slice(9, 13)) !== '80000000' || ![2, 3].includes(key[45])) {
+        throw new Error('The data checks out but does not hold account xpubs of one network.');
       }
       const xpub = await xpubString(key);
       for (const branch of [0, 1]) {
-        const descriptor = type.wrap(`[${origin}/${type.purpose}/0h/0h]${xpub}/${branch}/*`);
+        const descriptor = type.wrap(`[${origin}/${type.purpose}/${coinTypes[version]}/0h]${xpub}/${branch}/*`);
         descriptors.push(`${descriptor}#${descriptorChecksum(descriptor)}`);
       }
     }

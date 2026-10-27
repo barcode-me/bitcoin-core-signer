@@ -28,6 +28,7 @@ DESCRIPTOR = re.compile(r"[A-Za-z0-9()\[\]/*'#]+")
 BRANCH = re.compile(r"/([01])/\*\)+#[a-z0-9]{8}")
 MAX_DESCRIPTORS = 8
 WALLET_NOT_LOADED = "error code: -18"
+NETWORK_NAMES = {"main", "test", "testnet4", "signet", "regtest"}
 
 
 def run_cli(args, stdin=None, datadir=None, timeout=TIMEOUT_SECONDS):
@@ -80,7 +81,7 @@ def make_requests(descriptors, timestamp):
   return requests
 
 
-def import_public_descriptors(wallet, descriptors, datadir=None, rescan_since=None, create_wallet=True):
+def import_public_descriptors(wallet, descriptors, datadir=None, rescan_since=None, create_wallet=True, network="main"):
   if not isinstance(wallet, str) or not WALLET_NAME.fullmatch(wallet):
       raise ValueError("Wallet name may only contain letters, digits, dots, dashes and underscores")
   datadir = datadir.strip() if isinstance(datadir, str) else datadir
@@ -99,8 +100,18 @@ def import_public_descriptors(wallet, descriptors, datadir=None, rescan_since=No
       timestamp = int(since.timestamp())
   requests = make_requests(descriptors, timestamp)
 
+  if network not in NETWORK_NAMES:
+      raise ValueError(f"Unknown network: {network}")
   if not isinstance(create_wallet, bool):
       raise ValueError("create_wallet must be true or false")
+  # Mainnet keys (xprv/xpub) only work on mainnet, test network keys (tprv/tpub) only on test networks
+  chain = run_cli_json(["getblockchaininfo"], datadir=datadir).get("chain")
+  if chain != network:
+      raise ValueError(
+          f"Bitcoin Core is running on {chain}, but the network chosen on this page is {network}, "
+          "so no wallet was created. Choose the network Bitcoin Core runs on, or check the data directory"
+      )
+
   if create_wallet:
       # wallet_name disable_private_keys blank passphrase avoid_reuse descriptors: an empty descriptor
       # wallet. Bitcoin Core only imports descriptors without private keys into a wallet without them.
@@ -144,13 +155,14 @@ def main():
   parser.add_argument("--wallet", default="my-wallet", help="Name of the watch-only wallet (default: my-wallet)")
   parser.add_argument("--existing", action="store_true", help="Import into a wallet that already exists instead of creating an empty one")
   parser.add_argument("--datadir", help="Bitcoin Core data directory (default: Bitcoin Core's own default)")
+  parser.add_argument("--network", choices=sorted(NETWORK_NAMES), default="main", help="Bitcoin network, as Bitcoin Core names it (default: main)")
   parser.add_argument("--rescan-since", help="Look for transactions from this date, like 2024-01-31 (default: from now)")
   args = parser.parse_args()
 
   print("Paste the public descriptors, one per line, then press Ctrl-D.", file=sys.stderr)
   try:
       imported = import_public_descriptors(
-          args.wallet, [line.strip() for line in sys.stdin if line.strip()], args.datadir, args.rescan_since, not args.existing
+          args.wallet, [line.strip() for line in sys.stdin if line.strip()], args.datadir, args.rescan_since, not args.existing, args.network
       )
   except ValueError as error:
       raise SystemExit(str(error))

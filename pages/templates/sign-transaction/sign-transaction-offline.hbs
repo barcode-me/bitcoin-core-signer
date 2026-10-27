@@ -5,7 +5,7 @@
   {{#> important-callout}}
   ONLY USE THIS ON YOUR SECURE OFFLINE DEVICE. Input is sent only to the local server on this device and is not saved.
   {{/important-callout}}
-  {{> datadir-field}}
+  {{> node-settings}}
 
   <section class="part">
   <h2>Part 1: Decrypt your backup into a seed phrase</h2>
@@ -251,7 +251,7 @@ pip3 install -r python/requirements.txt{{/code-block}}
   {{#> code-block}}python3 decode-psbt.py --wallet my-wallet --datadir /YOUR/DRIVE{{/code-block}}
 
   <h3>Sign the transaction</h3>
-  <p>When every address and amount above is what you intended, sign the transaction with the wallet named in Part 2. Bitcoin Core signs and finalizes it with <code>walletprocesspsbt</code>. The signed PSBT is then written as Super Base 58 lines to type on the online device, which sends it. If the wallet cannot sign every input, nothing is shown.</p>
+  <p>When every address and amount above is what you intended, sign the transaction with the wallet named in Part 2. Bitcoin Core signs it with <code>walletprocesspsbt</code>. The online device already has the unsigned transaction, so only the signatures are written as Super Base 58 lines: 4 bytes of the transaction ID, so the online device can tell it is the same transaction, then 64 bytes per input. The online device adds them and sends the transaction. If the wallet cannot sign every input, nothing is shown.</p>
   <div class="notebook-cell" data-script="sign-psbt">
     <div class="notebook-toolbar">
       <button type="button" class="run-button" data-action="run">&#9654; Sign transaction</button>
@@ -280,6 +280,7 @@ pip3 install -r python/requirements.txt{{/code-block}}
   <noscript>Running the scripts on this page needs JavaScript enabled. You can copy the code and run it yourself.</noscript>
 </section>
 <script src="{{assetsHref}}/notebook.js" defer></script>
+<script src="{{assetsHref}}/node-settings.js" defer></script>
 <script src="{{assetsHref}}/sb58-viewer.js" defer></script>
 <script src="{{assetsHref}}/sb58-receive.js" defer></script>
 <script src="{{assetsHref}}/offline-signing.js" defer></script>

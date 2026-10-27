@@ -2,7 +2,7 @@
 {{> flow-header}}
 
 <section class="example-section" data-server="http://127.0.0.1:8765" data-home="{{homeHref}}">
-  {{> datadir-field}}
+  {{> node-settings}}
 
   <section class="part">
   <h2>Part 1: Get the public descriptors</h2>
@@ -185,9 +185,91 @@ python3 python/server.py{{/code-block}}
   {{#> code-block}}python3 create-psbt.py --wallet my-wallet --address bc1q... --amount 0.001 --unit btc --subtract-fee{{/code-block}}
   </section>
 
+  <section class="part">
+  <h2>Part 4: Receive the signatures and send the transaction</h2>
+  <p>The offline device only sends back its signatures, one per input, not the whole transaction. This device adds them to the unsigned transaction it created in Part 3, so it needs that transaction below. Part 3 fills it in. If you reloaded this page since, paste the unsigned PSBT that Part 3 printed, which you saved.</p>
+  <form id="unsigned-form" class="phonetic-form" autocomplete="off" novalidate>
+    <div class="phonetic-field">
+      <label for="unsigned-psbt">Unsigned transaction from Part 3 (PSBT, base64)</label>
+      <textarea id="unsigned-psbt" rows="4" spellcheck="false" autocomplete="off" autocapitalize="off"></textarea>
+    </div>
+  </form>
+  <p>Type the Super Base 58 (SB58) lines shown after signing in Part 5 of the offline device guide, one line per line, then the final checksum on the last line. Once the final checksum matches, the signatures are added and Bitcoin Core checks them with <code>testmempoolaccept</code>, then shows where the bitcoin goes, how much and the fee, so you can check them one last time before sending.</p>
+  <ul>
+    <li>Type each word and press <kbd>Space</kbd>. The word completes from its first letters when only one word starts with them.</li>
+    <li>Each line is 4 words, the casing string such as <code>01101</code>, and the checksum word. Press <kbd>Enter</kbd> after the checksum word to start the next line.</li>
+    <li>The last line is the 5-digit final checksum. Errors name the line to fix.</li>
+  </ul>
+
+  <div id="signed-receiver">
+    <div class="sb58-editor">
+      <div class="sb58-gutter" aria-hidden="true"></div>
+      <textarea class="sb58-input" rows="14" wrap="off" spellcheck="false" autocomplete="off" autocapitalize="off" aria-label="SB58 lines of the signatures" aria-describedby="signed-sb58-status signed-sb58-hint signed-sb58-errors"></textarea>
+    </div>
+    <p id="signed-sb58-hint" class="sb58-hint" role="alert"></p>
+    <p id="signed-sb58-status" class="sb58-status" role="status"></p>
+    <ul id="signed-sb58-errors" class="sb58-errors" role="alert"></ul>
+
+    <div class="sb58-result" hidden>
+      <h3>Signatures (hex)</h3>
+      <pre class="sb58-output" tabindex="0"></pre>
+      <button type="button" class="sb58-copy">Copy signatures</button>
+    </div>
+  </div>
+
+  <div class="notebook-cell" data-script="add-signatures">
+    <div class="notebook-toolbar">
+      <button type="button" class="run-button" data-action="run">&#9654; Add signatures</button>
+      <button type="button" data-action="copy-code">Copy code</button>
+      <span class="run-status" role="status"></span>
+    </div>
+    {{#> code-block caption="Python" language="python"}}{{scripts.addSignatures}}{{/code-block}}
+    <div class="notebook-output" hidden aria-live="polite">
+      <p class="notebook-output-label">Output</p>
+      <pre class="result" tabindex="0"></pre>
+    </div>
+  </div>
+  <p>To run it yourself, save the code as <code>add-signatures.py</code> and run it with the environment above active. It reads the signatures in hex from standard input:</p>
+  {{#> code-block}}python3 add-signatures.py --psbt cHNidP8B... --datadir /YOUR/DRIVE{{/code-block}}
+
+  <div class="notebook-cell" data-script="decode-psbt" id="signed-details">
+    <div class="notebook-toolbar">
+      <button type="button" class="run-button" data-action="run">&#9654; Show transaction details</button>
+      <button type="button" data-action="copy-code">Copy code</button>
+      <span class="run-status" role="status"></span>
+    </div>
+    {{#> code-block caption="Python" language="python"}}{{scripts.decodePsbt}}{{/code-block}}
+    <div class="notebook-output" hidden aria-live="polite">
+      <p class="notebook-output-label">Output</p>
+      <pre class="result" tabindex="0"></pre>
+    </div>
+  </div>
+
+  <h3>Send the transaction</h3>
+  <p>Bitcoin Core finalizes the signed transaction with <code>finalizepsbt</code> and sends it to the network with <code>sendrawtransaction</code>. <strong>A sent transaction cannot be undone.</strong> If it is not fully signed, nothing is sent.</p>
+  <form id="send-form" class="phonetic-form" autocomplete="off" novalidate>
+    <label class="choice"><input type="checkbox" id="confirm-send"> I checked every address and amount above, and I want to send this transaction</label>
+  </form>
+  <div class="notebook-cell" data-script="send-psbt">
+    <div class="notebook-toolbar">
+      <button type="button" class="run-button danger-button" data-action="run">Send transaction</button>
+      <button type="button" data-action="copy-code">Copy code</button>
+      <span class="run-status" role="status"></span>
+    </div>
+    {{#> code-block caption="Python" language="python"}}{{scripts.sendPsbt}}{{/code-block}}
+    <div class="notebook-output" hidden aria-live="polite">
+      <p class="notebook-output-label">Output</p>
+      <pre class="result" tabindex="0"></pre>
+    </div>
+  </div>
+  <p>To run it yourself, save the code as <code>send-psbt.py</code> and run it with the environment above active. It reads the signed PSBT in base64 from standard input, as printed by <code>add-signatures.py</code>:</p>
+  {{#> code-block}}python3 send-psbt.py --datadir /YOUR/DRIVE{{/code-block}}
+  </section>
+
   <noscript>This page needs JavaScript enabled.</noscript>
 </section>
 <script src="{{assetsHref}}/notebook.js" defer></script>
+<script src="{{assetsHref}}/node-settings.js" defer></script>
 <script src="{{assetsHref}}/sb58-viewer.js" defer></script>
 <script src="{{assetsHref}}/sb58-receive.js" defer></script>
 <script src="{{assetsHref}}/online-signing.js" defer></script>

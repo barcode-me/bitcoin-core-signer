@@ -76,12 +76,13 @@
       passphrase: sameBip39Passphrase.checked ? passphrase.value : bip39Passphrase.value,
       wallet: wallet.value,
       script_types: [...deriveForm.querySelectorAll('input[name=script-type]:checked')].map(input => input.value),
+      network: document.querySelector('#network').value,
     }),
     show: result => {
       fingerprints.querySelector('[data-field=fingerprint]').textContent = result.fingerprint;
       fingerprints.querySelector('[data-field=fingerprint-no-passphrase]').textContent = result.fingerprint_no_passphrase;
       fingerprints.hidden = fingerprintNote.hidden = resultActions.hidden = false;
-      derived = { wallet: wallet.value, requests: result.requests };
+      derived = { wallet: wallet.value, requests: result.requests, network: document.querySelector('#network').value };
       importWalletLabel.textContent = derived.wallet;
       return result.command;
     },
@@ -95,7 +96,7 @@
     collect: () => {
       if (!derived) throw new Error('Run Part 2 first. Part 3 imports the descriptors it produces.');
       const datadir = document.querySelector('#datadir').value.trim();
-      return { wallet: derived.wallet, requests: derived.requests, ...(datadir ? { datadir } : {}) };
+      return { wallet: derived.wallet, requests: derived.requests, network: derived.network, ...(datadir ? { datadir } : {}) };
     },
     show: imported => {
       importActions.hidden = false;
@@ -179,7 +180,7 @@
     },
     show: signed => {
       signViewer.show([...signed.lines, signed.final_checksum]);
-      return `Signed with wallet ${signed.wallet}. ${signed.lines.length + 1} lines: ${signed.lines.length} data lines and the final checksum. They encode the ${signed.bytes.toLocaleString('en-US')}-byte signed PSBT (${signed.base58_chars.toLocaleString('en-US')} Base58 characters).`;
+      return `Signed with wallet ${signed.wallet}. ${signed.lines.length + 1} lines: ${signed.lines.length} data lines and the final checksum. They encode ${signed.signatures} ${signed.signatures === 1 ? 'signature' : 'signatures'} of transaction ${signed.txid}: ${signed.bytes.toLocaleString('en-US')} bytes (${signed.base58_chars.toLocaleString('en-US')} Base58 characters).`;
     },
     clear: signViewer.clear,
   });
@@ -203,4 +204,6 @@
   });
   // Every part runs bitcoin-cli with the data directory at the top, so a new one makes their results stale.
   clearOnEdit(document.querySelector('#datadir-form'), () => { clearDelete(); clearImport(); clearPsbt(); clearSign(); });
+  // Part 2 derives keys for the chosen network, so another network needs new descriptors.
+  document.querySelector('#network').addEventListener('change', clearDerive);
 })();

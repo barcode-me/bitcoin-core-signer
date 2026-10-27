@@ -20,6 +20,7 @@ WALLET_NAME = re.compile(r"[A-Za-z0-9._-]+")
 DESCRIPTOR = re.compile(r"[A-Za-z0-9()/*#]+")
 PRIVATE_KEY = re.compile(r"[xt]prv[1-9A-HJ-NP-Za-km-z]+")
 REQUEST_KEYS = {"desc", "active", "internal", "range", "timestamp"}
+NETWORK_NAMES = {"main", "test", "testnet4", "signet", "regtest"}
 
 
 def run_cli(args, stdin=None, datadir=None):
@@ -70,15 +71,25 @@ def check_requests(requests):
           raise ValueError("Invalid descriptor import request")
 
 
-def import_descriptors(wallet, requests, datadir=None):
+def import_descriptors(wallet, requests, datadir=None, network="main"):
   if not isinstance(wallet, str) or not WALLET_NAME.fullmatch(wallet):
       raise ValueError("Wallet name may only contain letters, digits, dots, dashes and underscores")
   check_requests(requests)
+  if network not in NETWORK_NAMES:
+      raise ValueError(f"Unknown network: {network}")
   datadir = datadir.strip() if isinstance(datadir, str) else datadir
   if datadir is not None and (
       not isinstance(datadir, str) or len(datadir) > 4096 or not datadir.isprintable()
   ):
       raise ValueError("Data directory must be a path without control characters")
+
+  # Mainnet keys (xprv/xpub) only work on mainnet, test network keys (tprv/tpub) only on test networks
+  chain = run_cli_json(["getblockchaininfo"], datadir=datadir).get("chain")
+  if chain != network:
+      raise ValueError(
+          f"Bitcoin Core is running on {chain}, but the network chosen on this page is {network}, "
+          "so no wallet was created. Choose the network Bitcoin Core runs on, or check the data directory"
+      )
 
   # Blank: the wallet makes no keys of its own, it only holds the imported descriptors
   run_cli(["-named", "createwallet", f"wallet_name={wallet}", "blank=true"], datadir=datadir)
@@ -90,10 +101,11 @@ def import_descriptors(wallet, requests, datadir=None):
       if not result.get("success")
   ]
   if failures:
-      raise ValueError(
+      # Bitcoin Core's messages quote the descriptor, private key included
+      raise ValueError(PRIVATE_KEY.sub("[private key hidden]",
           f"Created wallet {wallet}, but {len(failures)} of {len(requests)} descriptors "
           f"were not imported ({'; '.join(failures)})"
-      )
+      ))
 
   # Without "true", listdescriptors gives the public descriptors
   listed = run_cli_json([f"-rpcwallet={wallet}", "listdescriptors"], datadir=datadir)
@@ -114,11 +126,12 @@ def main():
   parser = argparse.ArgumentParser()
   parser.add_argument("--wallet", default="my-wallet", help="Name of the wallet to create (default: my-wallet)")
   parser.add_argument("--datadir", help="Bitcoin Core data directory (default: Bitcoin Core's own default)")
+  parser.add_argument("--network", choices=sorted(NETWORK_NAMES), default="main", help="Bitcoin network, as Bitcoin Core names it (default: main)")
   args = parser.parse_args()
 
   print("Paste the importdescriptors requests as a JSON array, then press Ctrl-D.", file=sys.stderr)
   try:
-      imported = import_descriptors(args.wallet, json.loads(sys.stdin.read()), args.datadir)
+      imported = import_descriptors(args.wallet, json.loads(sys.stdin.read()), args.datadir, args.network)
   except ValueError as error:
       raise SystemExit(str(error))
 

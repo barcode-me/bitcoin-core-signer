@@ -43,7 +43,7 @@ SCRIPTS = {
     "import-public-descriptors": {
         "function": "import_public_descriptors",
         "required": {"wallet", "descriptors"},
-        "optional": {"datadir", "rescan_since", "create_wallet"},
+        "optional": {"datadir", "rescan_since", "create_wallet", "network"},
     },
     "create-psbt": {
         "function": "create_psbt",
@@ -60,15 +60,25 @@ SCRIPTS = {
         "required": {"psbt", "wallet"},
         "optional": {"datadir"},
     },
+    "add-signatures": {
+        "function": "add_signatures",
+        "required": {"psbt", "signatures"},
+        "optional": {"datadir"},
+    },
+    "send-psbt": {
+        "function": "send_psbt",
+        "required": {"psbt"},
+        "optional": {"datadir"},
+    },
     "import-descriptors": {
         "function": "import_descriptors",
         "required": {"wallet", "requests"},
-        "optional": {"datadir"},
+        "optional": {"datadir", "network"},
     },
     "convert-bip39-to-core": {
         "function": "convert_to_core",
         "required": {"mnemonic"},
-        "optional": {"passphrase", "script_types", "wallet"},
+        "optional": {"passphrase", "script_types", "wallet", "network"},
     },
 }
 
