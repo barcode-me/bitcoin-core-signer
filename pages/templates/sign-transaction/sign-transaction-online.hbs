@@ -1,7 +1,96 @@
 {{#> layout}}
 {{> flow-header}}
 
-<section class="example-section">
-  <p></p>
+<section class="example-section" data-server="http://127.0.0.1:8765" data-home="{{homeHref}}">
+  <section class="part">
+  <h2>Part 1: Get the public descriptors</h2>
+  <p>This device needs the public descriptors of your wallet to create transactions. Type them in from the offline device, or load them from a wallet that already exists in Bitcoin Core on this device. Then choose the address type you will create transactions with.</p>
+
+  <form id="source-form" class="phonetic-form" autocomplete="off" novalidate>
+    <fieldset class="field-group">
+      <legend>Get the public descriptors by</legend>
+      <label class="choice"><input type="radio" name="source" value="received" checked> Typing the Super Base 58 lines from the offline device</label>
+      <label class="choice"><input type="radio" name="source" value="wallet"> Loading a wallet that already exists in Bitcoin Core on this device</label>
+    </fieldset>
+  </form>
+
+  <div id="source-received">
+    <p>Type the Super Base 58 (SB58) lines shown in Part 4 of the offline device guide, one line per line, then the final checksum on the last line. This page recovers the public descriptors from them. Input stays on this page and is not sent or saved.</p>
+    <ul>
+      <li>Type each word and press <kbd>Space</kbd>. The word completes from its first letters when only one word starts with them, so <code>x</code> becomes <code>x-ray</code> and <code>sev</code> becomes <code>seven</code>.</li>
+      <li>A few letters are shared by several words (<code>t</code> is tango, two or three), so type enough letters to tell them apart. The page tells you when it cannot complete a word.</li>
+      <li>Each line is 4 words, the casing string such as <code>01101</code>, and the checksum word. Press <kbd>Enter</kbd> after the checksum word to start the next line.</li>
+      <li>The last line is the 5-digit final checksum. Errors name the line to fix.</li>
+    </ul>
+
+    <div class="sb58-editor">
+      <div id="sb58-gutter" class="sb58-gutter" aria-hidden="true"></div>
+      <textarea id="sb58-input" rows="14" wrap="off" spellcheck="false" autocomplete="off" autocapitalize="off" aria-label="SB58 lines" aria-describedby="sb58-status sb58-hint sb58-errors"></textarea>
+    </div>
+    <p id="sb58-hint" class="sb58-hint" role="alert"></p>
+    <p id="sb58-status" class="sb58-status" role="status"></p>
+    <ul id="sb58-errors" class="sb58-errors" role="alert"></ul>
+
+    <div id="sb58-result" class="sb58-result" hidden>
+      <h3>Public descriptors</h3>
+      <pre id="sb58-descriptors" tabindex="0"></pre>
+      <button type="button" id="sb58-copy">Copy public descriptors</button>
+    </div>
+  </div>
+
+  <div id="source-wallet" hidden>
+    <p>Enter the name of the wallet. The local server asks Bitcoin Core for its public descriptors with <code>listdescriptors</code>, loading the wallet first if it is not loaded, and never asks for private keys. Bitcoin Core must be running on this device. In a terminal, from the project folder, create a Python environment and install the dependencies (this needs internet access):</p>
+    {{#> code-block}}python3 -m venv python/venv
+source python/venv/bin/activate
+pip3 install -r python/requirements.txt{{/code-block}}
+    <p>Then start the local server and leave it running (run <code>source python/venv/bin/activate</code> first in a new terminal). This page must also be served on port 8000, for example with <code>python3 -m http.server 8000</code> from the project folder and opened at <code>http://localhost:8000/build/</code>, or the server will refuse it:</p>
+    {{#> code-block}}python3 python/server.py{{/code-block}}
+    <p id="server-status" class="server-status" role="status">Checking for the local server…</p>
+
+    <form id="wallet-form" class="phonetic-form" autocomplete="off" novalidate>
+      <div class="phonetic-field">
+        <label for="wallet-name">Wallet name</label>
+        <input id="wallet-name" value="my-wallet" spellcheck="false" autocomplete="off" autocapitalize="off">
+      </div>
+      <div class="phonetic-field">
+        <label for="datadir">Bitcoin Core data directory (optional)</label>
+        <input id="datadir" placeholder="Leave empty for the default, or e.g. /YOUR/DRIVE" spellcheck="false" autocomplete="off" autocapitalize="off">
+      </div>
+    </form>
+
+    <div class="notebook-cell" data-script="list-public-descriptors">
+      <div class="notebook-toolbar">
+        <button type="button" class="run-button" data-action="run">&#9654; Load descriptors</button>
+        <button type="button" data-action="copy-code">Copy code</button>
+        <span class="run-status" role="status"></span>
+      </div>
+      {{#> code-block caption="Python" language="python"}}{{scripts.listPublicDescriptors}}{{/code-block}}
+      <div class="notebook-output" hidden aria-live="polite">
+        <p class="notebook-output-label">Output</p>
+        <pre class="result" tabindex="0"></pre>
+      </div>
+    </div>
+    <p>To run it yourself, save the code as <code>list-public-descriptors.py</code> and run it with the environment above active:</p>
+    {{#> code-block}}python3 list-public-descriptors.py my-wallet{{/code-block}}
+  </div>
+
+  <form id="type-form" class="phonetic-form" autocomplete="off" novalidate>
+    <fieldset class="field-group" id="script-type-group" disabled>
+      <legend>Address type (choose one)</legend>
+      <label class="choice"><input type="radio" name="script-type" value="legacy"> Legacy (P2PKH)</label>
+      <label class="choice"><input type="radio" name="script-type" value="nested-segwit"> Nested SegWit (P2SH-P2WPKH)</label>
+      <label class="choice"><input type="radio" name="script-type" value="native-segwit"> Native SegWit (P2WPKH)</label>
+      <label class="choice"><input type="radio" name="script-type" value="taproot"> Taproot (P2TR)</label>
+    </fieldset>
+  </form>
+  <p id="type-status" class="source-status" role="status">Load the public descriptors to choose an address type.</p>
+  <pre id="selected-descriptors" class="selected-descriptors" tabindex="0" hidden></pre>
+  </section>
+
+  <noscript>This page needs JavaScript enabled.</noscript>
+</section>
+<script src="{{assetsHref}}/notebook.js" defer></script>
+<script src="{{assetsHref}}/sb58-receive.js" defer></script>
+<script src="{{assetsHref}}/online-signing.js" defer></script>
 {{> flow-navigation}}
 {{/layout}}

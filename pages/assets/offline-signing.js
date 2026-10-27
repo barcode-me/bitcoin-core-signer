@@ -1,94 +1,7 @@
-/* Runs the Python shown on the page through the local server in python/server.py. Requests only go to localhost. */
+/* Offline device steps: each part runs the Python shown on the page through the local server. */
 (() => {
-  const server = document.querySelector('[data-server]').dataset.server;
-  const serverStatus = document.querySelector('#server-status');
-  const notRunning = 'Cannot reach the local server. Start it with python3 python/server.py, or copy the code and run it yourself.';
+  const { setupCell, clearOnEdit, copyText } = globalThis.Notebook;
   const choice = (form, name) => form.querySelector(`input[name=${name}]:checked`).value;
-
-  async function checkServer() {
-    try {
-      const response = await fetch(`${server}/health`, { cache: 'no-store' });
-      if (!response.ok) {
-        const body = await response.json().catch(() => ({}));
-        serverStatus.textContent = `The local server refused this page: ${body.error ?? response.status}`;
-        return;
-      }
-      serverStatus.textContent = 'Local server is running.';
-    } catch {
-      serverStatus.textContent = notRunning;
-    }
-  }
-  checkServer();
-
-  async function copyText(text, status, label = 'Copied.') {
-    try {
-      await navigator.clipboard.writeText(text);
-    } catch {
-      // Clipboard API needs a secure context; fall back to selecting a temporary field.
-      const field = document.createElement('textarea');
-      field.value = text; field.setAttribute('readonly', '');
-      field.style.position = 'fixed'; field.style.opacity = '0';
-      document.body.append(field); field.select();
-      const copied = document.execCommand('copy');
-      field.remove();
-      if (!copied) { status.textContent = 'Copy failed. Select the text and copy it manually.'; return; }
-    }
-    status.textContent = label;
-    setTimeout(() => { if (status.textContent === label) status.textContent = ''; }, 2000);
-  }
-
-  // A cell is a code block with Run and Copy buttons and an output area, like a notebook.
-  // collect() returns the script's inputs, show(value) renders its result as text.
-  function setupCell(cell, { collect, show, clear = () => {} }) {
-    const runButton = cell.querySelector('[data-action=run]');
-    const status = cell.querySelector('.run-status');
-    const output = cell.querySelector('.notebook-output');
-    const result = cell.querySelector('.result');
-    const source = cell.querySelector('.code-block code').textContent;
-
-    function clearResult() { output.hidden = true; result.textContent = ''; result.classList.remove('is-error'); clear(); }
-    function showResult(text, isError) {
-      result.textContent = text; result.classList.toggle('is-error', isError); output.hidden = false;
-    }
-
-    runButton.addEventListener('click', async () => {
-      clearResult();
-      runButton.disabled = true;
-      status.textContent = 'Running…';
-      try {
-        let inputs;
-        try { inputs = collect(); } catch (error) { return showResult(error.message, true); }
-        let response;
-        try {
-          response = await fetch(`${server}/run`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            cache: 'no-store',
-            body: JSON.stringify({ script: cell.dataset.script, inputs }),
-          });
-        } catch {
-          serverStatus.textContent = notRunning;
-          return showResult(notRunning, true);
-        }
-        serverStatus.textContent = 'Local server is running.';
-        const body = await response.json().catch(() => ({}));
-        if (response.ok) showResult(show(body.result), false);
-        else showResult(body.error ?? `Server returned ${response.status}`, true);
-      } finally {
-        status.textContent = '';
-        runButton.disabled = false;
-      }
-    });
-    cell.querySelector('[data-action=copy-code]').addEventListener('click', () => copyText(source, status));
-    cell.querySelector('[data-action=copy-result]')?.addEventListener('click', () => copyText(result.textContent, status, 'Copied.'));
-    return clearResult;
-  }
-
-  // Any edit makes the previous output stale, and the output holds secrets.
-  function clearOnEdit(form, clearResult) {
-    form.addEventListener('input', clearResult);
-    form.addEventListener('change', clearResult);
-  }
 
   // Part 1: encrypted backup -> seed phrase
   const decryptForm = document.querySelector('#decrypt-form');
@@ -107,6 +20,103 @@
   const fingerprints = deriveCell.querySelector('.fingerprints');
   const fingerprintNote = deriveCell.querySelector('.fingerprint-note');
   const resultActions = deriveCell.querySelector('.result-actions');
+
+  // Delete a wallet by the name entered in Part 2, in the data directory from Part 3
+  const deleteCell = document.querySelector('[data-script=delete-wallet]');
+  const confirmDelete = document.querySelector('#confirm-delete');
+  const clearDelete = setupCell(deleteCell, {
+    collect: () => {
+      const name = wallet.value.trim();
+      if (!name) throw new Error('Enter the wallet name in Part 2.');
+      if (confirmDelete.value.trim() !== name) throw new Error(`Type ${name} in the box above to confirm. Nothing was deleted.`);
+      const datadir = document.querySelector('#datadir').value.trim();
+      return { wallet: name, confirm: confirmDelete.value.trim(), ...(datadir ? { datadir } : {}) };
+    },
+    show: deleted => {
+      confirmDelete.value = '';
+      // Part 3's output described this wallet, which is gone now.
+      if (derived?.wallet === deleted.wallet) clearImport();
+      return `Deleted wallet ${deleted.wallet}: removed ${deleted.path}`;
+    },
+  });
+  clearOnEdit(document.querySelector('#delete-form'), clearDelete);
+  // A different wallet name needs its own confirmation.
+  wallet.addEventListener('input', () => { confirmDelete.value = ''; clearDelete(); });
+
+  // Part 4: public descriptors -> Super Base 58 lines, shown one at a time
+  const publicDescriptors = document.querySelector('#public-descriptors');
+  const transferCell = document.querySelector('[data-script=descriptors-to-sb58]');
+  const viewer = transferCell.querySelector('.sb58-viewer');
+  const lineList = viewer.querySelector('.sb58-lines');
+  const lineProgress = viewer.querySelector('.sb58-progress');
+  let shownLines = [];
+  let currentLine = 0;
+
+  function selectLine(index) {
+    const items = lineList.children;
+    currentLine = Math.max(0, Math.min(index, items.length - 1));
+    [...items].forEach((item, position) => {
+      item.classList.toggle('is-current', position === currentLine);
+      if (position === currentLine) item.setAttribute('aria-current', 'true'); else item.removeAttribute('aria-current');
+    });
+    const item = items[currentLine];
+    // Keep the current line in view inside the list without scrolling the page.
+    if (item.offsetTop < lineList.scrollTop) lineList.scrollTop = item.offsetTop;
+    else if (item.offsetTop + item.offsetHeight > lineList.scrollTop + lineList.clientHeight) lineList.scrollTop = item.offsetTop + item.offsetHeight - lineList.clientHeight;
+    lineProgress.textContent = currentLine === items.length - 1 ? `Final checksum (line ${items.length} of ${items.length})` : `Line ${currentLine + 1} of ${items.length}`;
+  }
+  function showLines(lines) {
+    shownLines = lines;
+    lineList.replaceChildren(...lines.map((line, index) => {
+      const item = document.createElement('li');
+      const tokens = line.split(' ');
+      item.setAttribute('aria-label', `Line ${index + 1}: ${line}`);
+      const number = document.createElement('span');
+      number.className = 'line-number'; number.textContent = index + 1;
+      item.append(number);
+      if (index === lines.length - 1) {
+        item.classList.add('is-final');
+        const digits = document.createElement('span'); digits.className = 'line-words'; digits.textContent = line;
+        const label = document.createElement('span'); label.className = 'line-label'; label.textContent = 'final checksum';
+        item.append(digits, label);
+      } else {
+        const text = (className, value) => { const span = document.createElement('span'); span.className = className; span.textContent = value; return span; };
+        item.append(text('line-words', tokens.slice(0, -2).join(' ')), text('line-casing', tokens.at(-2)), text('line-checksum', tokens.at(-1)));
+      }
+      item.addEventListener('click', () => { selectLine(index); viewer.focus({ preventScroll: true }); });
+      return item;
+    }));
+    viewer.hidden = false;
+    selectLine(0);
+    viewer.focus({ preventScroll: true });
+  }
+  viewer.addEventListener('keydown', event => {
+    // Keys on the Copy button belong to the button.
+    if (event.target !== viewer) return;
+    if (event.key === 'Enter' && !event.shiftKey || event.key === 'ArrowDown') selectLine(currentLine + 1);
+    else if (event.key === 'Enter' || event.key === 'ArrowUp' || event.key === 'Backspace') selectLine(currentLine - 1);
+    else if (event.key === 'Home') selectLine(0);
+    else if (event.key === 'End') selectLine(lineList.children.length - 1);
+    else return;
+    event.preventDefault();
+  });
+
+  // Copies the lines as typed on the online device: no line numbers, final checksum last.
+  viewer.querySelector('[data-action=copy-lines]').addEventListener('click', () => copyText(shownLines.join('\n'), viewer.querySelector('.sb58-copy-status')));
+
+  const clearTransfer = setupCell(transferCell, {
+    collect: () => {
+      const descriptors = publicDescriptors.value.split('\n').map(line => line.trim()).filter(Boolean);
+      if (!descriptors.length) throw new Error('Run Part 3 first, or paste the public descriptors above.');
+      return { descriptors };
+    },
+    show: encoded => {
+      showLines([...encoded.lines, encoded.final_checksum]);
+      return `${encoded.lines.length + 1} lines: ${encoded.lines.length} data lines and the final checksum. They encode ${encoded.bytes.toLocaleString('en-US')} bytes of data (${encoded.base58_chars.toLocaleString('en-US')} Base58 characters).`;
+    },
+    clear: () => { viewer.hidden = true; lineList.replaceChildren(); },
+  });
+  clearOnEdit(document.querySelector('#transfer-form'), clearTransfer);
 
   // Part 3: import the Part 2 descriptors into a new Bitcoin Core wallet
   const importCell = document.querySelector('[data-script=import-descriptors]');
@@ -145,6 +155,8 @@
     },
     show: imported => {
       importActions.hidden = false;
+      publicDescriptors.value = imported.descriptors.map(item => item.desc).join('\n');
+      clearTransfer();
       const lines = imported.descriptors.map(item => `${item.internal ? 'change ' : 'receive'}  ${item.desc}`);
       return `Created wallet ${imported.wallet} and imported the descriptors.\n\nPublic descriptors:\n${lines.join('\n')}`;
     },

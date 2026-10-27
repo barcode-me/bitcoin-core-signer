@@ -7,7 +7,10 @@
   {
     "slug": "sign-transaction-online",
     "title": "Sign transaction Online Device",
-    "description": "Online device flow"
+    "description": "Online device flow",
+    "scripts": {
+      "listPublicDescriptors": "python/list-public-descriptors.py"
+    }
   },
   {
     "slug": "sign-transaction-offline",
@@ -16,7 +19,9 @@
     "scripts": {
       "decryptBackup": "python/decrypt-backup-to-bip39.py",
       "convertBip39ToCore": "python/convert-bip39-to-core.py",
-      "importDescriptors": "python/import-descriptors.py"
+      "importDescriptors": "python/import-descriptors.py",
+      "descriptorsToSb58": "python/descriptors-to-sb58.py",
+      "deleteWallet": "python/delete-wallet.py"
     }
   }
 ]

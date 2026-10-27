@@ -1,15 +1,16 @@
 {{#> layout}}
 {{> flow-header}}
 
-<section class="example-section" data-server="http://127.0.0.1:8765">
+<section class="example-section" data-server="http://127.0.0.1:8765" data-home="{{homeHref}}">
   {{#> important-callout}}
   ONLY USE THIS ON YOUR SECURE OFFLINE DEVICE. Input is sent only to the local server on this device and is not saved.
   {{/important-callout}}
 
+  <section class="part">
   <h2>Part 1: Decrypt your backup into a seed phrase</h2>
   <p>The page runs the Python scripts through a small server on this device. It listens on <code>127.0.0.1</code> only, accepts the page's POST requests, and runs only the scripts it lists.</p>
-  <p>This page must be served over HTTP on port 8000, or the local server will refuse it. If it is not already running, start the page server from the project folder in its own terminal and open <code>http://127.0.0.1:8000/</code>. Opening the page from a file does not work.</p>
-  {{#> code-block}}python3 -m http.server 8000 --directory build{{/code-block}}
+  <p>This page must be served over HTTP on port 8000, or the local server will refuse it. If it is not already running, start the page server from the project folder in its own terminal and open <code>http://127.0.0.1:8000/build/</code>. Opening the page from a file does not work.</p>
+  {{#> code-block}}python3 -m http.server 8000{{/code-block}}
   <p>First, from the project folder, create a Python environment and install the dependencies in <code>python/requirements.txt</code> (this includes <code>embit</code>). Installing needs internet access, so do it before you go offline.</p>
   {{#> code-block}}python3 -m venv python/venv
 source python/venv/bin/activate
@@ -67,6 +68,9 @@ pip3 install -r python/requirements.txt{{/code-block}}
 </section>
 
 <section>
+  </section>
+
+  <section class="part">
   <h2>Part 2: Derive the Bitcoin Core descriptors</h2>
   <p>This takes the seed phrase from Part 1 and your BIP39 passphrase and derives the private descriptors for Bitcoin Core. Running Part 1 fills in the seed phrase below, or you can type your own.</p>
 
@@ -82,10 +86,10 @@ pip3 install -r python/requirements.txt{{/code-block}}
     </div>
     <fieldset class="field-group">
       <legend>Address types to include</legend>
-      <label class="choice"><input type="checkbox" name="script-type" value="legacy" checked> Legacy (P2PKH)</label>
-      <label class="choice"><input type="checkbox" name="script-type" value="nested-segwit" checked> Nested SegWit (P2SH-P2WPKH)</label>
+      <label class="choice"><input type="checkbox" name="script-type" value="legacy"> Legacy (P2PKH)</label>
+      <label class="choice"><input type="checkbox" name="script-type" value="nested-segwit"> Nested SegWit (P2SH-P2WPKH)</label>
       <label class="choice"><input type="checkbox" name="script-type" value="native-segwit" checked> Native SegWit (P2WPKH)</label>
-      <label class="choice"><input type="checkbox" name="script-type" value="taproot" checked> Taproot (P2TR)</label>
+      <label class="choice"><input type="checkbox" name="script-type" value="taproot"> Taproot (P2TR)</label>
     </fieldset>
     <div class="phonetic-field">
       <label for="wallet">Wallet name</label>
@@ -118,6 +122,34 @@ pip3 install -r python/requirements.txt{{/code-block}}
   {{#> code-block}}python3 convert-bip39-to-core.py --bitcoin-core{{/code-block}}
   </section>
   <section>
+
+  <details class="danger-zone">
+    <summary>Delete a wallet from Bitcoin Core</summary>
+    <p>Use this to remove the wallet named above, for example to run Part 3 again with the same name. Bitcoin Core has no command for this, so the wallet is unloaded and its folder is removed from <code>wallets</code> in the data directory (the one from Part 3, or the default). <strong>This cannot be undone.</strong> The wallet holds your private keys, so delete it only if you can restore it from your backup. Bitcoin Core must be running, and nothing is deleted unless it lists a wallet with that name and the folder contains only wallet files.</p>
+    <form id="delete-form" class="phonetic-form" autocomplete="off" novalidate>
+      <div class="phonetic-field">
+        <label for="confirm-delete">Type the wallet name to confirm</label>
+        <input id="confirm-delete" spellcheck="false" autocomplete="off" autocapitalize="off">
+      </div>
+    </form>
+    <div class="notebook-cell" data-script="delete-wallet">
+      <div class="notebook-toolbar">
+        <button type="button" class="run-button danger-button" data-action="run">Delete wallet</button>
+        <button type="button" data-action="copy-code">Copy code</button>
+        <span class="run-status" role="status"></span>
+      </div>
+      {{#> code-block caption="Python" language="python"}}{{scripts.deleteWallet}}{{/code-block}}
+      <div class="notebook-output" hidden aria-live="polite">
+        <p class="notebook-output-label">Output</p>
+        <pre class="result" tabindex="0"></pre>
+      </div>
+    </div>
+    <p>To run it yourself, save the code as <code>delete-wallet.py</code> and run it with the environment above active. It asks you to type the name to confirm:</p>
+    {{#> code-block}}python3 delete-wallet.py my-wallet --datadir /YOUR/DRIVE{{/code-block}}
+  </details>
+  </section>
+
+  <section class="part">
   <h2>Part 3: Import the descriptors into Bitcoin Core</h2>
   <p>This creates a new blank wallet named <strong data-field="import-wallet">my-wallet</strong> in Bitcoin Core, imports the descriptors from Part 2 into it, then lists the wallet's public descriptors. Run Part 2 first. Change the wallet name there if you need a different one. Bitcoin Core must be running on this device, for example with <code>bitcoind -daemon</code>, so that <code>bitcoin-cli</code> can reach it. If you started it with a custom <code>-datadir</code>, enter the same directory below.</p>
   <p>The local server runs <code>bitcoin-cli</code> directly, without a shell, and sends it the private descriptors on standard input so they do not appear in the process list. It runs <code>createwallet</code>, <code>importdescriptors</code> and <code>listdescriptors</code>, and nothing else. The wallet is not encrypted, so protect the device.</p>
@@ -144,8 +176,48 @@ pip3 install -r python/requirements.txt{{/code-block}}
   </div>
   <p>To run it yourself, save the code as <code>import-descriptors.py</code> and run it with the environment above active. It reads the requests from standard input; they are the JSON array inside the quotes of the import command from Part 2:</p>
   {{#> code-block}}python3 import-descriptors.py --wallet my-wallet --datadir /YOUR/DRIVE{{/code-block}}
+  </section>
+
+  <section class="part">
+  <h2>Part 4: Transfer the public descriptors to the online device</h2>
+  <p><strong>This step is optional.</strong> If the online device already has the public descriptors of your wallet, skip it and continue with the next guide step.</p>
+  <p>Otherwise, the script below encodes the public descriptors as a JSON array of strings, encodes that as Base58, and writes it as Super Base 58 lines (see <a href="../intro/index.html">Super Base 58</a>). Never transfer private descriptors: the script refuses them. Running Part 3 fills in the descriptors below, or you can paste your own, one per line. Each descriptor takes about 50 lines, so choose fewer address types in Part 2 if you want fewer lines to type.</p>
+
+  <form id="transfer-form" class="phonetic-form" autocomplete="off" novalidate>
+    <div class="phonetic-field">
+      <label for="public-descriptors">Public descriptors, one per line</label>
+      <textarea id="public-descriptors" rows="4" wrap="off" spellcheck="false" autocomplete="off" autocapitalize="off"></textarea>
+    </div>
+  </form>
+
+  <div class="notebook-cell" data-script="descriptors-to-sb58">
+    <div class="notebook-toolbar">
+      <button type="button" class="run-button" data-action="run">&#9654; Run</button>
+      <button type="button" data-action="copy-code">Copy code</button>
+      <span class="run-status" role="status"></span>
+    </div>
+    {{#> code-block caption="Python" language="python"}}{{scripts.descriptorsToSb58}}{{/code-block}}
+    <div class="notebook-output" hidden aria-live="polite">
+      <p class="notebook-output-label">Output</p>
+      <pre class="result" tabindex="0"></pre>
+      <div class="sb58-viewer" tabindex="0" hidden aria-label="Super Base 58 lines to type on the online device">
+        <div class="sb58-header">
+          <p class="sb58-progress" aria-live="polite"></p>
+          <button type="button" data-action="copy-lines">Copy lines</button>
+          <span class="sb58-copy-status" role="status"></span>
+        </div>
+        <ol class="sb58-lines"></ol>
+        <p class="sb58-help">Click here, then press <kbd>Enter</kbd> to move to the next line, <kbd>Shift</kbd>+<kbd>Enter</kbd> to go back. Type each line on the online device, then the final checksum last.</p>
+      </div>
+    </div>
+  </div>
+  <p>To run it yourself, save the code as <code>descriptors-to-sb58.py</code> and run it with the environment above active. It reads the public descriptors from standard input:</p>
+  {{#> code-block}}python3 descriptors-to-sb58.py{{/code-block}}
+  </section>
+
   <noscript>Running the scripts on this page needs JavaScript enabled. You can copy the code and run it yourself.</noscript>
 </section>
+<script src="{{assetsHref}}/notebook.js" defer></script>
 <script src="{{assetsHref}}/offline-signing.js" defer></script>
 {{> flow-navigation}}
 {{/layout}}

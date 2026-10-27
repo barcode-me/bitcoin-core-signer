@@ -25,6 +25,21 @@ SCRIPTS = {
         "required": {"backup", "encoding", "words", "passphrase"},
         "optional": {"otp"},
     },
+    "delete-wallet": {
+        "function": "delete_wallet",
+        "required": {"wallet", "confirm"},
+        "optional": {"datadir"},
+    },
+    "list-public-descriptors": {
+        "function": "list_public_descriptors",
+        "required": {"wallet"},
+        "optional": {"datadir"},
+    },
+    "descriptors-to-sb58": {
+        "function": "encode_sb58",
+        "required": {"descriptors"},
+        "optional": set(),
+    },
     "import-descriptors": {
         "function": "import_descriptors",
         "required": {"wallet", "requests"},
@@ -91,7 +106,7 @@ def make_handler(port, allowed_origins):
           origin = self.headers.get("Origin")
           if origin is not None and origin not in allowed_origins:
               if origin == "null":
-                  hint = ". The page was opened from a file. Serve it with: python3 -m http.server 8000 --directory build"
+                  hint = ". The page was opened from a file. From the project folder, serve it with python3 -m http.server 8000 and open http://localhost:8000/build/"
               else:
                   hint = f". Serve the pages from an allowed origin or restart the server with --allow-origin {origin}"
               self.reject(f"Origin not allowed: {origin}", hint)

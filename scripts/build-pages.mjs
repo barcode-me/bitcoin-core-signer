@@ -14,7 +14,6 @@ const sections = [
   { slug: 'recover-from-backup', title: 'Recover from backup', description: 'Restore your wallet and verify recovery.' },
   { slug: 'encrypt-your-backups', title: 'Encrypt your backups', description: 'Encrypt a seed phrase or extended private key backup.' },
   { slug: 'faq', title: 'FAQ', description: 'Frequently asked questions.', standalone: true },
-  { slug: 'recover-phonetic', title: 'Recover a phonetic backup', description: 'Validate a phonetic word list and recover its hex.', standalone: true },
 ];
 for (const section of sections) {
   if (section.standalone) {
