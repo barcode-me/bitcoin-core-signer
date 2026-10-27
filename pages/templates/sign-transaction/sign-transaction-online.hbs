@@ -131,9 +131,72 @@ python3 python/server.py{{/code-block}}
   {{#> code-block}}python3 import-public-descriptors.py --wallet my-wallet --rescan-since 2024-01-31{{/code-block}}
   </section>
 
+  <section class="part">
+  <h2>Part 3: Create the transaction and transfer it to the offline device</h2>
+  <p>This asks Bitcoin Core to create an unsigned transaction, a PSBT, from the watch-only wallet with <code>walletcreatefundedpsbt</code>. Bitcoin Core chooses the coins to spend and sends the change back to the wallet, to the address type chosen in Part 1. Nothing is signed or sent: only the offline device can sign it. The PSBT is then written as Super Base 58 lines to type on the offline device (see <a href="../intro/index.html">Super Base 58</a>).</p>
+  <p>Check the destination address carefully, character by character. Bitcoin cannot be recovered once the signed transaction is sent.</p>
+
+  <form id="psbt-form" class="phonetic-form" autocomplete="off" novalidate>
+    <div class="phonetic-field">
+      <label for="psbt-wallet-name">Wallet name</label>
+      <input id="psbt-wallet-name" value="my-wallet" spellcheck="false" autocomplete="off" autocapitalize="off">
+    </div>
+    <div class="phonetic-field">
+      <label for="psbt-datadir">Bitcoin Core data directory (optional)</label>
+      <input id="psbt-datadir" placeholder="Leave empty for the default, or e.g. /YOUR/DRIVE" spellcheck="false" autocomplete="off" autocapitalize="off">
+    </div>
+    <div class="phonetic-field">
+      <label for="destination">Destination address</label>
+      <input id="destination" spellcheck="false" autocomplete="off" autocapitalize="off">
+    </div>
+    <div class="phonetic-field">
+      <label for="amount">Amount</label>
+      <input id="amount" inputmode="decimal" spellcheck="false" autocomplete="off">
+    </div>
+    <fieldset class="field-group">
+      <legend>Amount in</legend>
+      <label class="choice"><input type="radio" name="unit" value="btc" checked> BTC</label>
+      <label class="choice"><input type="radio" name="unit" value="sats"> sats</label>
+    </fieldset>
+    <fieldset class="field-group">
+      <legend>Fee</legend>
+      <label class="choice"><input type="checkbox" id="subtract-fee"> Subtract the fee from the amount (the address receives the amount minus the fee, for example to send everything)</label>
+      <div class="phonetic-field">
+        <label for="fee-rate">Fee rate in sat/vB (optional, Bitcoin Core estimates one when empty)</label>
+        <input id="fee-rate" inputmode="decimal" spellcheck="false" autocomplete="off">
+      </div>
+    </fieldset>
+  </form>
+
+  <div class="notebook-cell" data-script="create-psbt">
+    <div class="notebook-toolbar">
+      <button type="button" class="run-button" data-action="run">&#9654; Create transaction</button>
+      <button type="button" data-action="copy-code">Copy code</button>
+      <span class="run-status" role="status"></span>
+    </div>
+    {{#> code-block caption="Python" language="python"}}{{scripts.createPsbt}}{{/code-block}}
+    <div class="notebook-output" hidden aria-live="polite">
+      <p class="notebook-output-label">Output</p>
+      <pre class="result" tabindex="0"></pre>
+      <div class="sb58-viewer" tabindex="0" hidden aria-label="Super Base 58 lines to type on the offline device">
+        <div class="sb58-header">
+          <p class="sb58-progress" aria-live="polite"></p>
+          <button type="button" data-action="copy-lines">Copy lines</button>
+          <span class="sb58-copy-status" role="status"></span>
+        </div>
+        <ol class="sb58-lines"></ol>
+        <p class="sb58-help">Click here, then press <kbd>Enter</kbd> to move to the next line, <kbd>Shift</kbd>+<kbd>Enter</kbd> to go back. Type each line on the offline device, then the final checksum last.</p>
+      </div>
+    </div>
+  </div>
+  <p>To run it yourself, save the code as <code>create-psbt.py</code> and run it with the environment above active. It prints the PSBT in base64 and as SB58 lines:</p>
+  {{#> code-block}}python3 create-psbt.py --wallet my-wallet --address bc1q... --amount 0.001 --unit btc --subtract-fee{{/code-block}}
+  </section>
+
   <noscript>This page needs JavaScript enabled.</noscript>
 </section>
 <script src="{{assetsHref}}/notebook.js" defer></script>
+<script src="{{assetsHref}}/sb58-viewer.js" defer></script>
 <script src="{{assetsHref}}/sb58-receive.js" defer></script>
 <script src="{{assetsHref}}/online-signing.js" defer></script>
 {{> flow-navigation}}

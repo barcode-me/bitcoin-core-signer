@@ -10,7 +10,8 @@
     "description": "Online device flow",
     "scripts": {
       "listPublicDescriptors": "python/list-public-descriptors.py",
-      "importPublicDescriptors": "python/import-public-descriptors.py"
+      "importPublicDescriptors": "python/import-public-descriptors.py",
+      "createPsbt": "python/create-psbt.py"
     }
   },
   {

@@ -109,6 +109,8 @@
     },
     show: listed => {
       fromWallet = listed.descriptors.map(item => item.desc);
+      // Part 3 creates transactions with this wallet.
+      document.querySelector('#psbt-wallet-name').value = listed.wallet;
       if (source() === 'wallet') apply();
       return `Loaded ${fromWallet.length} public ${fromWallet.length === 1 ? 'descriptor' : 'descriptors'} from wallet ${listed.wallet}.`;
     },
@@ -136,11 +138,57 @@
     show: imported => {
       const scanned = imported.rescan_since ? `Scanned the blockchain from ${imported.rescan_since}.` : 'No past transactions were looked for.';
       const action = imported.created ? 'Created watch-only wallet' : 'Imported into wallet';
+      // Part 3 creates transactions with this wallet.
+      document.querySelector('#psbt-wallet-name').value = imported.wallet;
       return `${action} ${imported.wallet}: ${imported.imported} public descriptors. ${scanned}\nBalance: ${imported.balance.toFixed(8)} BTC`;
     },
   });
   clearOnEdit(importForm, clearImport);
   // New descriptors make the import result stale.
   document.addEventListener('sb58-recovered', clearImport);
+
+  // Part 3: create an unsigned transaction with the wallet and show it as SB58 lines for the offline device
+  const psbtForm = document.querySelector('#psbt-form');
+  const psbtWallet = document.querySelector('#psbt-wallet-name');
+  const psbtCell = document.querySelector('[data-script=create-psbt]');
+  const psbtViewer = globalThis.SB58Viewer.setupViewer(psbtCell.querySelector('.sb58-viewer'));
+  const sats = value => `${value.toLocaleString('en-US')} sats (${(value / 1e8).toFixed(8)} BTC)`;
+  const clearPsbt = setupCell(psbtCell, {
+    collect: () => {
+      if (!state.scriptType) throw new Error('Choose the address type in Part 1 first. Change goes back to the wallet with that type.');
+      const wallet = psbtWallet.value.trim();
+      if (!wallet) throw new Error('Enter the name of the wallet.');
+      const address = document.querySelector('#destination').value.trim();
+      if (!address) throw new Error('Enter the destination address.');
+      const amount = document.querySelector('#amount').value.trim();
+      if (!amount) throw new Error('Enter the amount to send.');
+      const feeRate = document.querySelector('#fee-rate').value.trim();
+      const datadir = document.querySelector('#psbt-datadir').value.trim();
+      return {
+        wallet, address, amount,
+        unit: psbtForm.querySelector('input[name=unit]:checked').value,
+        subtract_fee: document.querySelector('#subtract-fee').checked,
+        change_type: state.scriptType,
+        ...(feeRate ? { fee_rate: feeRate } : {}),
+        ...(datadir ? { datadir } : {}),
+      };
+    },
+    show: created => {
+      psbtViewer.show([...created.lines, created.final_checksum]);
+      const received = created.subtract_fee ? created.amount_sats - created.fee_sats : created.amount_sats;
+      return [
+        `To:       ${created.address}`,
+        `Receives: ${sats(received)}`,
+        `Fee:      ${sats(created.fee_sats)}${created.subtract_fee ? ', taken from the amount' : ', paid on top'}`,
+        `Change:   ${created.has_change ? 'yes, back to this wallet' : 'none'}`,
+        '',
+        `${created.lines.length + 1} lines: ${created.lines.length} data lines and the final checksum. They encode the ${created.bytes.toLocaleString('en-US')}-byte PSBT (${created.base58_chars.toLocaleString('en-US')} Base58 characters).`,
+      ].join('\n');
+    },
+    clear: psbtViewer.clear,
+  });
+  clearOnEdit(psbtForm, clearPsbt);
+  // Change goes to the address type chosen in Part 1, so a new choice makes the transaction stale.
+  document.addEventListener('signer-state', clearPsbt);
   apply();
 })();

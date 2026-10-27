@@ -45,6 +45,11 @@ SCRIPTS = {
         "required": {"wallet", "descriptors"},
         "optional": {"datadir", "rescan_since", "create_wallet"},
     },
+    "create-psbt": {
+        "function": "create_psbt",
+        "required": {"wallet", "address", "amount", "unit", "subtract_fee"},
+        "optional": {"fee_rate", "change_type", "datadir"},
+    },
     "import-descriptors": {
         "function": "import_descriptors",
         "required": {"wallet", "requests"},
