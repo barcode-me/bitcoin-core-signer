@@ -2,6 +2,8 @@
 {{> flow-header}}
 
 <section class="example-section" data-server="http://127.0.0.1:8765" data-home="{{homeHref}}">
+  {{> datadir-field}}
+
   <section class="part">
   <h2>Part 1: Get the public descriptors</h2>
   <p>This device needs the public descriptors of your wallet to create transactions. Type them in from the offline device, or load them from a wallet that already exists in Bitcoin Core on this device. Then choose the address type you will create transactions with.</p>
@@ -23,18 +25,20 @@
       <li>The last line is the 5-digit final checksum. Errors name the line to fix.</li>
     </ul>
 
-    <div class="sb58-editor">
-      <div id="sb58-gutter" class="sb58-gutter" aria-hidden="true"></div>
-      <textarea id="sb58-input" rows="14" wrap="off" spellcheck="false" autocomplete="off" autocapitalize="off" aria-label="SB58 lines" aria-describedby="sb58-status sb58-hint sb58-errors"></textarea>
-    </div>
-    <p id="sb58-hint" class="sb58-hint" role="alert"></p>
-    <p id="sb58-status" class="sb58-status" role="status"></p>
-    <ul id="sb58-errors" class="sb58-errors" role="alert"></ul>
+    <div id="descriptor-receiver">
+      <div class="sb58-editor">
+        <div class="sb58-gutter" aria-hidden="true"></div>
+        <textarea class="sb58-input" rows="14" wrap="off" spellcheck="false" autocomplete="off" autocapitalize="off" aria-label="SB58 lines" aria-describedby="sb58-status sb58-hint sb58-errors"></textarea>
+      </div>
+      <p id="sb58-hint" class="sb58-hint" role="alert"></p>
+      <p id="sb58-status" class="sb58-status" role="status"></p>
+      <ul id="sb58-errors" class="sb58-errors" role="alert"></ul>
 
-    <div id="sb58-result" class="sb58-result" hidden>
-      <h3>Public descriptors</h3>
-      <pre id="sb58-descriptors" tabindex="0"></pre>
-      <button type="button" id="sb58-copy">Copy public descriptors</button>
+      <div class="sb58-result" hidden>
+        <h3>Public descriptors</h3>
+        <pre class="sb58-output" tabindex="0"></pre>
+        <button type="button" class="sb58-copy">Copy public descriptors</button>
+      </div>
     </div>
   </div>
 
@@ -51,10 +55,6 @@ pip3 install -r python/requirements.txt{{/code-block}}
       <div class="phonetic-field">
         <label for="wallet-name">Wallet name</label>
         <input id="wallet-name" value="my-wallet" spellcheck="false" autocomplete="off" autocapitalize="off">
-      </div>
-      <div class="phonetic-field">
-        <label for="datadir">Bitcoin Core data directory (optional)</label>
-        <input id="datadir" placeholder="Leave empty for the default, or e.g. /YOUR/DRIVE" spellcheck="false" autocomplete="off" autocapitalize="off">
       </div>
     </form>
 
@@ -90,7 +90,7 @@ pip3 install -r python/requirements.txt{{/code-block}}
   <section class="part">
   <h2>Part 2: Import the public descriptors into Bitcoin Core</h2>
   <p><strong>Skip this part if you loaded the descriptors from a wallet in Part 1.</strong> That wallet already has them.</p>
-  <p>This creates a new, empty watch-only wallet in Bitcoin Core and imports every public descriptor typed in Part 1, for all address types. To import into a watch-only wallet that already exists instead, uncheck "Create an empty wallet"; the wallet is loaded first if it is not loaded. A watch-only wallet has no private keys: it shows your balance and creates transactions, but only the offline device can sign them. Bitcoin Core must be running on this device. If you started it with a custom <code>-datadir</code>, enter the same directory below.</p>
+  <p>This creates a new, empty watch-only wallet in Bitcoin Core and imports every public descriptor typed in Part 1, for all address types. To import into a watch-only wallet that already exists instead, uncheck "Create an empty wallet"; the wallet is loaded first if it is not loaded. A watch-only wallet has no private keys: it shows your balance and creates transactions, but only the offline device can sign them. Bitcoin Core must be running on this device. If you started it with a custom <code>-datadir</code>, enter it in the data directory field at the top of this page.</p>
   <p>The page runs the script through the local server. If it is not running yet, set up the Python environment and start it as described in Part 1 under "Loading a wallet", or in a terminal from the project folder:</p>
   {{#> code-block}}python3 -m venv python/venv
 source python/venv/bin/activate
@@ -108,10 +108,6 @@ python3 python/server.py{{/code-block}}
     <div class="phonetic-field">
       <label for="rescan-since">Look for transactions since (optional)</label>
       <input id="rescan-since" type="date">
-    </div>
-    <div class="phonetic-field">
-      <label for="import-datadir">Bitcoin Core data directory (optional)</label>
-      <input id="import-datadir" placeholder="Leave empty for the default, or e.g. /YOUR/DRIVE" spellcheck="false" autocomplete="off" autocapitalize="off">
     </div>
   </form>
 
@@ -140,10 +136,6 @@ python3 python/server.py{{/code-block}}
     <div class="phonetic-field">
       <label for="psbt-wallet-name">Wallet name</label>
       <input id="psbt-wallet-name" value="my-wallet" spellcheck="false" autocomplete="off" autocapitalize="off">
-    </div>
-    <div class="phonetic-field">
-      <label for="psbt-datadir">Bitcoin Core data directory (optional)</label>
-      <input id="psbt-datadir" placeholder="Leave empty for the default, or e.g. /YOUR/DRIVE" spellcheck="false" autocomplete="off" autocapitalize="off">
     </div>
     <div class="phonetic-field">
       <label for="destination">Destination address</label>

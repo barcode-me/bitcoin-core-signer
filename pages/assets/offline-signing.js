@@ -21,7 +21,7 @@
   const fingerprintNote = deriveCell.querySelector('.fingerprint-note');
   const resultActions = deriveCell.querySelector('.result-actions');
 
-  // Delete a wallet by the name entered in Part 2, in the data directory from Part 3
+  // Delete a wallet by the name entered in Part 2, in the data directory at the top of the page
   const deleteCell = document.querySelector('[data-script=delete-wallet]');
   const confirmDelete = document.querySelector('#confirm-delete');
   const clearDelete = setupCell(deleteCell, {
@@ -106,7 +106,6 @@
     },
     clear: () => { importActions.hidden = true; },
   });
-  clearOnEdit(document.querySelector('#import-form'), clearImport);
 
   const clearDecrypt = setupCell(document.querySelector('[data-script=decrypt-backup-to-bip39]'), {
     collect: () => ({
@@ -135,4 +134,52 @@
   document.querySelector('#show-bip39-passphrase').addEventListener('change', event => {
     bip39Passphrase.type = event.target.checked ? 'text' : 'password';
   });
+
+  // Part 5: SB58 lines from the online device -> unsigned PSBT -> its outputs and fee, read by Bitcoin Core
+  const psbtCell = document.querySelector('[data-script=decode-psbt]');
+  const psbtMagic = [0x70, 0x73, 0x62, 0x74, 0xff]; // "psbt" and 0xff
+  const btc = sats => `${(sats / 1e8).toFixed(8)} BTC (${sats.toLocaleString('en-US')} sats)`;
+  let receivedPsbt = null;
+  const clearPsbt = setupCell(psbtCell, {
+    collect: () => {
+      if (!receivedPsbt) throw new Error('Type the SB58 lines from the online device above first.');
+      const name = wallet.value.trim();
+      const datadir = document.querySelector('#datadir').value.trim();
+      return { psbt: receivedPsbt, ...(name ? { wallet: name } : {}), ...(datadir ? { datadir } : {}) };
+    },
+    show: decoded => {
+      const lines = decoded.outputs.map(output => {
+        const to = output.address ?? '(an output without an address)';
+        const note = output.is_mine ? `  (change, back to wallet ${decoded.wallet})` : '';
+        return `  ${btc(output.amount_sats)} to ${to}${note}`;
+      });
+      const sent = decoded.outputs.filter(output => !output.is_mine).reduce((sum, output) => sum + output.amount_sats, 0);
+      const fee = decoded.fee_sats === null ? 'unknown, the PSBT does not include the coins it spends' : `${btc(decoded.fee_sats)}, ${decoded.fee_rate} sat/vB`;
+      return [
+        'Outputs:', ...lines, '',
+        decoded.wallet ? `Sent out of the wallet: ${btc(sent)}` : 'Enter the wallet name in Part 2 to tell the change apart.',
+        `Fee: ${fee}`,
+        `Inputs: ${decoded.inputs}`,
+        `Status: ${decoded.status}`,
+        `Transaction ID: ${decoded.txid}`,
+      ].join('\n');
+    },
+  });
+
+  globalThis.SB58.setupEditor(document.querySelector('#psbt-receiver'), {
+    decode: bytes => {
+      if (psbtMagic.some((byte, index) => bytes[index] !== byte)) throw new Error('The lines check out but do not hold a PSBT. Check that these are the lines from Part 3 of the online device guide.');
+      let binary = '';
+      for (const byte of bytes) binary += String.fromCharCode(byte);
+      return btoa(binary);
+    },
+    show: psbt => ({ text: psbt, status: 'Received the transaction. The final checksum matches.' }),
+    onChange: psbt => {
+      receivedPsbt = psbt;
+      // Show the details as soon as the transaction is received.
+      if (psbt) psbtCell.querySelector('[data-action=run]').click(); else clearPsbt();
+    },
+  });
+  // Every part runs bitcoin-cli with the data directory at the top, so a new one makes their results stale.
+  clearOnEdit(document.querySelector('#datadir-form'), () => { clearDelete(); clearImport(); clearPsbt(); });
 })();

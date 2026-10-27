@@ -93,6 +93,15 @@
     setDescriptors(useWallet ? fromWallet : received);
   }
 
+  // Tells the rest of the page which descriptors the typed lines recovered, or null when they no longer do.
+  globalThis.SB58.setupEditor(document.querySelector('#descriptor-receiver'), {
+    decode: bytes => globalThis.SB58.rebuildDescriptors(bytes),
+    show: descriptors => ({
+      text: descriptors.join('\n'),
+      status: `Recovered ${descriptors.length} ${descriptors.length === 1 ? 'descriptor' : 'descriptors'}. The final checksum matches.`,
+    }),
+    onChange: descriptors => document.dispatchEvent(new CustomEvent('sb58-recovered', { detail: descriptors })),
+  });
   document.addEventListener('sb58-recovered', event => {
     received = event.detail;
     if (source() === 'received') apply();
@@ -131,7 +140,7 @@
       const wallet = document.querySelector('#import-wallet-name').value.trim();
       if (!wallet) throw new Error('Enter a name for the wallet.');
       const rescanSince = document.querySelector('#rescan-since').value;
-      const datadir = document.querySelector('#import-datadir').value.trim();
+      const datadir = document.querySelector('#datadir').value.trim();
       const createWallet = document.querySelector('#create-wallet').checked;
       return { wallet, descriptors: received, create_wallet: createWallet, ...(rescanSince ? { rescan_since: rescanSince } : {}), ...(datadir ? { datadir } : {}) };
     },
@@ -163,7 +172,7 @@
       const amount = document.querySelector('#amount').value.trim();
       if (!amount) throw new Error('Enter the amount to send.');
       const feeRate = document.querySelector('#fee-rate').value.trim();
-      const datadir = document.querySelector('#psbt-datadir').value.trim();
+      const datadir = document.querySelector('#datadir').value.trim();
       return {
         wallet, address, amount,
         unit: psbtForm.querySelector('input[name=unit]:checked').value,
@@ -190,5 +199,7 @@
   clearOnEdit(psbtForm, clearPsbt);
   // Change goes to the address type chosen in Part 1, so a new choice makes the transaction stale.
   document.addEventListener('signer-state', clearPsbt);
+  // Every part runs bitcoin-cli with the data directory at the top, so a new one makes their results stale.
+  clearOnEdit(document.querySelector('#datadir-form'), () => { clearWallet(); clearImport(); clearPsbt(); });
   apply();
 })();

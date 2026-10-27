@@ -50,6 +50,11 @@ SCRIPTS = {
         "required": {"wallet", "address", "amount", "unit", "subtract_fee"},
         "optional": {"fee_rate", "change_type", "datadir"},
     },
+    "decode-psbt": {
+        "function": "decode_psbt",
+        "required": {"psbt"},
+        "optional": {"wallet", "datadir"},
+    },
     "import-descriptors": {
         "function": "import_descriptors",
         "required": {"wallet", "requests"},

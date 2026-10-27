@@ -23,6 +23,7 @@
       "convertBip39ToCore": "python/convert-bip39-to-core.py",
       "importDescriptors": "python/import-descriptors.py",
       "descriptorsToSb58": "python/descriptors-to-sb58.py",
+      "decodePsbt": "python/decode-psbt.py",
       "deleteWallet": "python/delete-wallet.py"
     }
   }

@@ -1,4 +1,4 @@
-/* Receives public descriptors typed as Super Base 58 (SB58), compatible with python/descriptors-to-sb58.py. Input stays on this page. */
+/* Receives data typed as Super Base 58 (SB58), such as the public descriptors from python/descriptors-to-sb58.py. Input stays on this page. */
 (() => {
   const base58 = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
   const letterWords = {
@@ -96,6 +96,7 @@
     return { errors, lineCount: lines.length, hasFinal, finalLine: last, rows, chars, finalDigits: hasFinal ? lines[last - 1] : '', complete: hasFinal && !errors.length };
   }
 
+  // Returns the bytes the lines encode, once the final checksum matches.
   async function recover(rows, chars, finalDigits) {
     // The browser only offers SHA-256 on secure pages such as http://localhost or http://127.0.0.1.
     if (!globalThis.crypto?.subtle) throw new Error('This browser cannot compute the checksum on this address. Open the page from http://localhost:8000 or http://127.0.0.1:8000.');
@@ -109,7 +110,7 @@
     const bytes = [];
     while (number) { bytes.unshift(Number(number & 255n)); number >>= 8n; }
     for (const char of chars) { if (char !== '1') break; bytes.unshift(0); }
-    return rebuildDescriptors(new Uint8Array(bytes));
+    return new Uint8Array(bytes);
   }
 
   // Address types in bit order, as in python/descriptors-to-sb58.py.
@@ -186,110 +187,127 @@
     return descriptors;
   }
 
-  globalThis.SB58 = { completeWord, checkLines, recover, checksumWord, rebuildDescriptors };
-  if (typeof document === 'undefined') return;
-
-  const input = document.querySelector('#sb58-input');
-  const gutter = document.querySelector('#sb58-gutter');
-  const status = document.querySelector('#sb58-status');
-  const hint = document.querySelector('#sb58-hint');
-  const errorList = document.querySelector('#sb58-errors');
-  const result = document.querySelector('#sb58-result');
-  const output = document.querySelector('#sb58-descriptors');
-  const copyButton = document.querySelector('#sb58-copy');
-  let revision = 0;
-  let recovered = null;
-  // Tells the rest of the page which descriptors the typed lines recovered, or null when they no longer do.
-  function announce(descriptors) {
-    if (descriptors === recovered) return;
-    recovered = descriptors;
-    document.dispatchEvent(new CustomEvent('sb58-recovered', { detail: descriptors }));
-  }
-
-  function renderGutter(errors) {
-    const count = input.value.split('\n').length;
-    const failed = new Set(errors.map(error => error.line));
-    gutter.replaceChildren(...Array.from({ length: count }, (_, index) => {
-      const row = document.createElement('div');
-      row.textContent = index + 1;
-      row.classList.toggle('has-error', failed.has(index + 1));
-      return row;
-    }));
-    gutter.scrollTop = input.scrollTop;
-  }
-  function renderErrors(errors) {
-    errorList.replaceChildren(...errors.map(error => {
-      const item = document.createElement('li');
-      item.textContent = `Line ${error.line}: ${error.message}`;
-      return item;
-    }));
-  }
-  function showStatus(text) { status.textContent = text; }
-
-  async function update() {
-    const version = ++revision;
-    hint.textContent = '';
-    result.hidden = true;
-    announce(null);
-    const checked = checkLines(input.value);
-    renderGutter(checked.errors);
-    renderErrors(checked.errors);
-    if (checked.errors.length) return showStatus(`${checked.errors.length === 1 ? '1 line needs' : `${checked.errors.length} lines need`} attention.`);
-    if (!checked.complete) {
-      return showStatus(checked.lineCount ? `${checked.lineCount} ${checked.lineCount === 1 ? 'line' : 'lines'} entered. Keep typing, then type the final checksum on the last line.` : 'Waiting for the first line.');
+  // An editor is a container holding a .sb58-input textarea, .sb58-gutter, .sb58-hint, .sb58-status, .sb58-errors,
+  // and a .sb58-result with a .sb58-output and a .sb58-copy button.
+  // decode(bytes) turns the recovered bytes into a value, or throws when they are not what this editor expects.
+  // show(value) returns { text, status } for the result, and onChange(value) hears every new value, or null.
+  function setupEditor(container, { decode, show, onChange = () => {} }) {
+    const find = selector => container.querySelector(selector);
+    const input = find('.sb58-input');
+    const gutter = find('.sb58-gutter');
+    const status = find('.sb58-status');
+    const hint = find('.sb58-hint');
+    const errorList = find('.sb58-errors');
+    const result = find('.sb58-result');
+    const output = find('.sb58-output');
+    const copyButton = find('.sb58-copy');
+    let revision = 0;
+    let recovered = null;
+    function announce(value) {
+      if (value === recovered) return;
+      recovered = value;
+      onChange(value);
     }
-    showStatus('Every line checks out. Verifying the final checksum…');
-    try {
-      const descriptors = await recover(checked.rows, checked.chars, checked.finalDigits);
+
+    function renderGutter(errors) {
+      const count = input.value.split('\n').length;
+      const failed = new Set(errors.map(error => error.line));
+      gutter.replaceChildren(...Array.from({ length: count }, (_, index) => {
+        const row = document.createElement('div');
+        row.textContent = index + 1;
+        row.classList.toggle('has-error', failed.has(index + 1));
+        return row;
+      }));
+      gutter.scrollTop = input.scrollTop;
+    }
+    function renderErrors(errors) {
+      errorList.replaceChildren(...errors.map(error => {
+        const item = document.createElement('li');
+        item.textContent = `Line ${error.line}: ${error.message}`;
+        return item;
+      }));
+    }
+    function showStatus(text) { status.textContent = text; }
+    function showLastLineError(line, message, text) {
+      renderErrors([{ line, message }]);
+      renderGutter([{ line }]);
+      showStatus(text);
+    }
+
+    async function update() {
+      const version = ++revision;
+      hint.textContent = '';
+      result.hidden = true;
+      announce(null);
+      const checked = checkLines(input.value);
+      renderGutter(checked.errors);
+      renderErrors(checked.errors);
+      if (checked.errors.length) return showStatus(`${checked.errors.length === 1 ? '1 line needs' : `${checked.errors.length} lines need`} attention.`);
+      if (!checked.complete) {
+        return showStatus(checked.lineCount ? `${checked.lineCount} ${checked.lineCount === 1 ? 'line' : 'lines'} entered. Keep typing, then type the final checksum on the last line.` : 'Waiting for the first line.');
+      }
+      showStatus('Every line checks out. Verifying the final checksum…');
+      let bytes;
+      try {
+        bytes = await recover(checked.rows, checked.chars, checked.finalDigits);
+      } catch (error) {
+        if (version === revision) showLastLineError(checked.finalLine, error.message, 'The final checksum does not match.');
+        return;
+      }
+      let value;
+      try {
+        value = await decode(bytes);
+      } catch (error) {
+        if (version === revision) showLastLineError(checked.finalLine, error.message, 'The lines check out, but they do not hold what this step expects.');
+        return;
+      }
       if (version !== revision) return;
-      output.textContent = descriptors.join('\n');
+      const shown = show(value);
+      output.textContent = shown.text;
       result.hidden = false;
-      announce(descriptors);
-      showStatus(`Recovered ${descriptors.length} ${descriptors.length === 1 ? 'descriptor' : 'descriptors'}. The final checksum matches.`);
-    } catch (error) {
-      if (version !== revision) return;
-      renderErrors([{ line: checked.finalLine, message: error.message }]);
-      renderGutter([{ line: checked.finalLine }]);
-      showStatus('The final checksum does not match.');
+      showStatus(shown.status);
+      announce(value);
     }
+
+    // Space or Enter completes the word before the caret from its first letters, or says why it cannot.
+    input.addEventListener('keydown', event => {
+      if ((event.key !== ' ' && event.key !== 'Enter') || event.ctrlKey || event.metaKey || event.altKey || event.isComposing) return;
+      const { value, selectionStart: caret, selectionEnd } = input;
+      if (caret !== selectionEnd || (caret < value.length && !/\s/.test(value[caret]))) return;
+      let start = caret;
+      while (start > 0 && !/\s/.test(value[start - 1])) start--;
+      const token = value.slice(start, caret);
+      // Casing strings and the final checksum are digits, so only words are completed.
+      if (!/^[a-z]/i.test(token)) return;
+      const completed = completeWord(token);
+      if (completed.word) {
+        if (completed.word !== token) input.setRangeText(completed.word, start, caret, 'end');
+        return;
+      }
+      event.preventDefault();
+      hint.textContent = `Line ${value.slice(0, caret).split('\n').length}: ${completed.message}`;
+    });
+    input.addEventListener('input', update);
+    input.addEventListener('scroll', () => { gutter.scrollTop = input.scrollTop; });
+    errorList.addEventListener('click', event => {
+      const match = /^Line (\d+):/.exec(event.target.textContent);
+      if (!match) return;
+      const offset = input.value.split('\n').slice(0, Number(match[1]) - 1).join('\n').length + (match[1] > 1 ? 1 : 0);
+      input.focus(); input.setSelectionRange(offset, offset);
+    });
+    copyButton.addEventListener('click', async () => {
+      try {
+        await navigator.clipboard.writeText(output.textContent);
+      } catch {
+        const range = document.createRange(); range.selectNodeContents(output);
+        getSelection().removeAllRanges(); getSelection().addRange(range);
+        showStatus('Select and copy the text above.');
+        return;
+      }
+      showStatus('Copied.');
+    });
+    update();
   }
 
-  // Space or Enter completes the word before the caret from its first letters, or says why it cannot.
-  input.addEventListener('keydown', event => {
-    if ((event.key !== ' ' && event.key !== 'Enter') || event.ctrlKey || event.metaKey || event.altKey || event.isComposing) return;
-    const { value, selectionStart: caret, selectionEnd } = input;
-    if (caret !== selectionEnd || (caret < value.length && !/\s/.test(value[caret]))) return;
-    let start = caret;
-    while (start > 0 && !/\s/.test(value[start - 1])) start--;
-    const token = value.slice(start, caret);
-    // Casing strings and the final checksum are digits, so only words are completed.
-    if (!/^[a-z]/i.test(token)) return;
-    const completed = completeWord(token);
-    if (completed.word) {
-      if (completed.word !== token) input.setRangeText(completed.word, start, caret, 'end');
-      return;
-    }
-    event.preventDefault();
-    hint.textContent = `Line ${value.slice(0, caret).split('\n').length}: ${completed.message}`;
-  });
-  input.addEventListener('input', update);
-  input.addEventListener('scroll', () => { gutter.scrollTop = input.scrollTop; });
-  errorList.addEventListener('click', event => {
-    const match = /^Line (\d+):/.exec(event.target.textContent);
-    if (!match) return;
-    const offset = input.value.split('\n').slice(0, Number(match[1]) - 1).join('\n').length + (match[1] > 1 ? 1 : 0);
-    input.focus(); input.setSelectionRange(offset, offset);
-  });
-  copyButton.addEventListener('click', async () => {
-    try {
-      await navigator.clipboard.writeText(output.textContent);
-    } catch {
-      const range = document.createRange(); range.selectNodeContents(output);
-      getSelection().removeAllRanges(); getSelection().addRange(range);
-      showStatus('Select and copy the descriptors above.');
-      return;
-    }
-    showStatus('Copied the public descriptors.');
-  });
-  update();
+  globalThis.SB58 = { completeWord, checkLines, recover, checksumWord, rebuildDescriptors, setupEditor };
 })();
