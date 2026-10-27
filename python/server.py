@@ -25,6 +25,11 @@ SCRIPTS = {
         "required": {"backup", "encoding", "words", "passphrase"},
         "optional": {"otp"},
     },
+    "convert-bip39-to-core": {
+        "function": "convert_to_core",
+        "required": {"mnemonic"},
+        "optional": {"passphrase", "script_types", "wallet"},
+    },
 }
 
 

@@ -14,7 +14,8 @@
     "title": "Sign transaction Offline Device",
     "description": "Offline device flow",
     "scripts": {
-      "decryptBackup": "python/decrypt-backup-to-bip39.py"
+      "decryptBackup": "python/decrypt-backup-to-bip39.py",
+      "convertBip39ToCore": "python/convert-bip39-to-core.py"
     }
   }
 ]

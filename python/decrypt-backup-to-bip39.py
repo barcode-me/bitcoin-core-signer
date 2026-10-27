@@ -4,11 +4,12 @@ Decrypt a one-time-pad encrypted backup into a BIP39 mnemonic. Run this offline,
 because the output is a seed phrase.
 
 The backup is the full BIP39 bit stream: 11 bits per word, so 132 bits for 12
-words, written in hex (33 digits) or decimal. The one-time pad is the first 132
-bits of SHA-256(secret), where the secret is the one-time pad text, or the
-passphrase when no separate one-time pad is given. XOR gives the BIP39 bits: the
-entropy followed by its checksum, which is verified to catch a wrong secret or a
-typing mistake.
+words and 264 bits for 24 words, written in hex (33 or 66 digits) or decimal.
+The one-time pad is the first 132 or 264 bits of SHA-256(secret), followed if
+more bits are needed by SHA-256 of the previous hash. The secret is the
+one-time pad text, or the passphrase when no separate one-time pad is given.
+XOR gives the BIP39 bits: the entropy followed by its checksum, which is
+verified to catch a wrong secret or a typing mistake.
 """
 import argparse
 import hashlib
@@ -16,7 +17,6 @@ from getpass import getpass
 from embit import bip39
 
 WORD_COUNT_TO_BITS = {12: 12 * 11, 24: 24 * 11}
-SHA256_BITS = 256
 
 
 def parse_backup(text, encoding, total_bits):
@@ -45,12 +45,13 @@ def parse_backup(text, encoding, total_bits):
 def one_time_pad(secret, bits):
   if not secret:
       raise ValueError("The passphrase or one-time pad must not be empty")
-  if bits > SHA256_BITS:
-      raise ValueError(
-          f"A {bits}-bit one-time pad is longer than the {SHA256_BITS} bits SHA-256 gives"
-      )
-  digest = int.from_bytes(hashlib.sha256(secret.encode("utf-8")).digest(), "big")
-  return digest >> (SHA256_BITS - bits)
+  # One SHA-256 gives 256 bits. A 24-word backup needs 264, so keep hashing the previous block.
+  pad = b""
+  block = secret.encode("utf-8")
+  while len(pad) * 8 < bits:
+      block = hashlib.sha256(block).digest()
+      pad += block
+  return int.from_bytes(pad, "big") >> (len(pad) * 8 - bits)
 
 
 def decrypt_backup(backup, encoding, words, passphrase, otp=None):
