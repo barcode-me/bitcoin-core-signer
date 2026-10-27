@@ -56,13 +56,15 @@
       runButton.disabled = true;
       status.textContent = 'Running…';
       try {
+        let inputs;
+        try { inputs = collect(); } catch (error) { return showResult(error.message, true); }
         let response;
         try {
           response = await fetch(`${server}/run`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             cache: 'no-store',
-            body: JSON.stringify({ script: cell.dataset.script, inputs: collect() }),
+            body: JSON.stringify({ script: cell.dataset.script, inputs }),
           });
         } catch {
           serverStatus.textContent = notRunning;
@@ -78,7 +80,7 @@
       }
     });
     cell.querySelector('[data-action=copy-code]').addEventListener('click', () => copyText(source, status));
-    cell.querySelector('[data-action=copy-result]')?.addEventListener('click', () => copyText(result.textContent, status, 'Copied import command.'));
+    cell.querySelector('[data-action=copy-result]')?.addEventListener('click', () => copyText(result.textContent, status, 'Copied.'));
     return clearResult;
   }
 
@@ -106,6 +108,14 @@
   const fingerprintNote = deriveCell.querySelector('.fingerprint-note');
   const resultActions = deriveCell.querySelector('.result-actions');
 
+  // Part 3: import the Part 2 descriptors into a new Bitcoin Core wallet
+  const importCell = document.querySelector('[data-script=import-descriptors]');
+  const importWalletLabel = document.querySelector('[data-field=import-wallet]');
+  const importActions = importCell.querySelector('.result-actions');
+  let derived = null;
+  // Part 3 uses exactly what Part 2 produced, so it is cleared with it.
+  let clearImport = () => {};
+
   const clearDerive = setupCell(deriveCell, {
     collect: () => ({
       mnemonic: mnemonic.value,
@@ -113,17 +123,34 @@
       wallet: wallet.value,
       script_types: [...deriveForm.querySelectorAll('input[name=script-type]:checked')].map(input => input.value),
     }),
-    show: derived => {
-      fingerprints.querySelector('[data-field=fingerprint]').textContent = derived.fingerprint;
-      fingerprints.querySelector('[data-field=fingerprint-no-passphrase]').textContent = derived.fingerprint_no_passphrase;
+    show: result => {
+      fingerprints.querySelector('[data-field=fingerprint]').textContent = result.fingerprint;
+      fingerprints.querySelector('[data-field=fingerprint-no-passphrase]').textContent = result.fingerprint_no_passphrase;
       fingerprints.hidden = fingerprintNote.hidden = resultActions.hidden = false;
-      return derived.command;
+      derived = { wallet: wallet.value, requests: result.requests };
+      importWalletLabel.textContent = derived.wallet;
+      return result.command;
     },
-    clear: () => { fingerprints.hidden = fingerprintNote.hidden = resultActions.hidden = true; },
+    clear: () => { fingerprints.hidden = fingerprintNote.hidden = resultActions.hidden = true; derived = null; clearImport(); },
   });
   clearOnEdit(deriveForm, clearDerive);
   // The passphrase from Part 1 is used live while "Same as" is checked.
   passphrase.addEventListener('input', () => { if (sameBip39Passphrase.checked) clearDerive(); });
+
+  clearImport = setupCell(importCell, {
+    collect: () => {
+      if (!derived) throw new Error('Run Part 2 first. Part 3 imports the descriptors it produces.');
+      const datadir = document.querySelector('#datadir').value.trim();
+      return { wallet: derived.wallet, requests: derived.requests, ...(datadir ? { datadir } : {}) };
+    },
+    show: imported => {
+      importActions.hidden = false;
+      const lines = imported.descriptors.map(item => `${item.internal ? 'change ' : 'receive'}  ${item.desc}`);
+      return `Created wallet ${imported.wallet} and imported the descriptors.\n\nPublic descriptors:\n${lines.join('\n')}`;
+    },
+    clear: () => { importActions.hidden = true; },
+  });
+  clearOnEdit(document.querySelector('#import-form'), clearImport);
 
   const clearDecrypt = setupCell(document.querySelector('[data-script=decrypt-backup-to-bip39]'), {
     collect: () => ({

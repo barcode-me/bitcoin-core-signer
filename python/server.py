@@ -25,6 +25,11 @@ SCRIPTS = {
         "required": {"backup", "encoding", "words", "passphrase"},
         "optional": {"otp"},
     },
+    "import-descriptors": {
+        "function": "import_descriptors",
+        "required": {"wallet", "requests"},
+        "optional": {"datadir"},
+    },
     "convert-bip39-to-core": {
         "function": "convert_to_core",
         "required": {"mnemonic"},

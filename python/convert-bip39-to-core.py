@@ -87,6 +87,7 @@ def convert_to_core(mnemonic, passphrase="", script_types=None, wallet="my-walle
     "fingerprint": root.my_fingerprint.hex(),
     "fingerprint_no_passphrase": root_no_passphrase.my_fingerprint.hex(),
     "descriptors": descriptors,
+    "requests": imports,
     "command": f"bitcoin-cli -rpcwallet={wallet} importdescriptors '[\n{requests}\n]'",
   }
 

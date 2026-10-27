@@ -116,6 +116,34 @@ pip3 install -r python/requirements.txt{{/code-block}}
   </div>
   <p>To run it yourself, save the code as <code>convert-bip39-to-core.py</code> and run it with the environment above active. Add <code>--bitcoin-core</code> to print only the import command:</p>
   {{#> code-block}}python3 convert-bip39-to-core.py --bitcoin-core{{/code-block}}
+  </section>
+  <section>
+  <h2>Part 3: Import the descriptors into Bitcoin Core</h2>
+  <p>This creates a new blank wallet named <strong data-field="import-wallet">my-wallet</strong> in Bitcoin Core, imports the descriptors from Part 2 into it, then lists the wallet's public descriptors. Run Part 2 first. Change the wallet name there if you need a different one. Bitcoin Core must be running on this device, for example with <code>bitcoind -daemon</code>, so that <code>bitcoin-cli</code> can reach it. If you started it with a custom <code>-datadir</code>, enter the same directory below.</p>
+  <p>The local server runs <code>bitcoin-cli</code> directly, without a shell, and sends it the private descriptors on standard input so they do not appear in the process list. It runs <code>createwallet</code>, <code>importdescriptors</code> and <code>listdescriptors</code>, and nothing else. The wallet is not encrypted, so protect the device.</p>
+
+  <form id="import-form" class="phonetic-form" autocomplete="off" novalidate>
+    <div class="phonetic-field">
+      <label for="datadir">Bitcoin Core data directory (optional)</label>
+      <input id="datadir" placeholder="Leave empty for the default, or e.g. /YOUR/DRIVE" spellcheck="false" autocomplete="off" autocapitalize="off">
+    </div>
+  </form>
+
+  <div class="notebook-cell" data-script="import-descriptors">
+    <div class="notebook-toolbar">
+      <button type="button" class="run-button" data-action="run">&#9654; Run</button>
+      <button type="button" data-action="copy-code">Copy code</button>
+      <span class="run-status" role="status"></span>
+    </div>
+    {{#> code-block caption="Python" language="python"}}{{scripts.importDescriptors}}{{/code-block}}
+    <div class="notebook-output" hidden aria-live="polite">
+      <p class="notebook-output-label">Output</p>
+      <pre class="result" tabindex="0"></pre>
+      <div class="result-actions" hidden><button type="button" data-action="copy-result">Copy public descriptors</button></div>
+    </div>
+  </div>
+  <p>To run it yourself, save the code as <code>import-descriptors.py</code> and run it with the environment above active. It reads the requests from standard input; they are the JSON array inside the quotes of the import command from Part 2:</p>
+  {{#> code-block}}python3 import-descriptors.py --wallet my-wallet --datadir /YOUR/DRIVE{{/code-block}}
   <noscript>Running the scripts on this page needs JavaScript enabled. You can copy the code and run it yourself.</noscript>
 </section>
 <script src="{{assetsHref}}/offline-signing.js" defer></script>
