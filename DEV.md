@@ -73,6 +73,19 @@ Recovery steps live in `pages/templates/recover-from-backup/`, with their order 
 
 The lean flow's scripts live in `python/lean/` and run in a terminal; the pages only show the commands. Third-party packages go in `python/requirements.txt`. Set up the environment with `python3 -m venv python/venv`, `source python/venv/bin/activate` and `pip3 install -r python/requirements.txt`. `python/venv/` is git-ignored.
 
+## Publishing
+
+`.github/workflows/publish.yml` builds the pages on every push to `main` and deploys `build/` to GitHub Pages. In the repository settings, set Pages → Source to "GitHub Actions" once.
+
+To publish a release, push a tag starting with `v`:
+
+```sh
+git tag v1.0.0
+git push origin v1.0.0
+```
+
+The workflow then creates a GitHub release for the tag with `bitcoin-core-signer-v1.0.0.zip`, containing the built pages (`build/`), the Python scripts (`python/`) and `README.md`.
+
 ## Testing with bitcoin regtest
 
 ```sh

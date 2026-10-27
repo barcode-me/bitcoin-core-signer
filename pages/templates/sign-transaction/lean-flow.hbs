@@ -3,11 +3,10 @@
 
 <section class="example-section">
   {{#> important-callout}}
-  ONLY USE THIS ON YOUR SECURE OFFLINE DEVICE. These scripts print your seed phrase and private descriptors to the terminal.
+  If you followed the setup guide you already have the dependencies installed so skip that on the offline device.
   {{/important-callout}}
 
-  <p>This is a shorter version of the offline device flow. There is no page server or script server: you run three Python scripts in a terminal, one after the other, and copy each result into the next one.</p>
-  <p>First, from the project folder, create a Python environment and install the dependencies in <code>python/requirements.txt</code> (this includes <code>embit</code>). Installing needs internet access, so do it before you go offline.</p>
+  <p>First, from the project folder, create a Python environment and install the dependencies in <code>python/requirements.txt</code> (this includes <code>embit</code>). Installing needs internet access, so do it before you go offline, this is already part of the setup guide so if you followed it correctly you don't need to install python dependencies.</p>
   {{#> code-block}}python3 -m venv python/venv
 source python/venv/bin/activate
 pip3 install -r python/requirements.txt{{/code-block}}
