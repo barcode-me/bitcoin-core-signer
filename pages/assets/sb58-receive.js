@@ -1,4 +1,5 @@
-/* Receives data typed as Super Base 58 (SB58), such as the public descriptors from python/offline/descriptors-to-sb58.py. Input stays on this page. */
+/* Receives data typed as Super Base 58 (SB58), such as the public descriptors from python/offline/descriptors-to-sb58.py,
+   and encodes bytes as SB58 lines for the Super Base 58 page. Input stays on this page. */
 (() => {
   const base58 = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
   const letterWords = {
@@ -96,13 +97,17 @@
     return { errors, lineCount: lines.length, hasFinal, finalLine: last, rows, chars, finalDigits: hasFinal ? lines[last - 1] : '', complete: hasFinal && !errors.length };
   }
 
-  // Returns the bytes the lines encode, once the final checksum matches.
-  async function recover(rows, chars, finalDigits) {
+  // Final checksum: the last two bytes of SHA-256 over the lines joined by newlines, as 5 digits.
+  async function finalChecksum(rows) {
     // The browser only offers SHA-256 on secure pages such as http://localhost or http://127.0.0.1.
     if (!globalThis.crypto?.subtle) throw new Error('This browser cannot compute the checksum on this address. Open the page from http://localhost:8000 or http://127.0.0.1:8000.');
-    // Final checksum: the last two bytes of SHA-256 over the lines joined by newlines, as 5 digits.
     const digest = new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(rows.join('\n'))));
-    if (String(digest.at(-2) * 256 + digest.at(-1)).padStart(5, '0') !== finalDigits) {
+    return String(digest.at(-2) * 256 + digest.at(-1)).padStart(5, '0');
+  }
+
+  // Returns the bytes the lines encode, once the final checksum matches.
+  async function recover(rows, chars, finalDigits) {
+    if (await finalChecksum(rows) !== finalDigits) {
       throw new Error('The final checksum does not match, although every line passed. A line may be missing, repeated or out of order, or the final checksum was mistyped.');
     }
     let number = 0n;
@@ -132,6 +137,20 @@
     while (number) { encoded = base58[Number(number % 58n)] + encoded; number /= 58n; }
     for (const byte of bytes) { if (byte) break; encoded = `1${encoded}`; }
     return encoded;
+  }
+
+  // The lines to type for bytes, as python/offline/descriptors-to-sb58.py writes them, followed by the final checksum.
+  async function encodeLines(bytes) {
+    const encoded = base58Encode(bytes);
+    const rows = [];
+    for (let start = 0; start < encoded.length; start += 4) {
+      const chunk = encoded.slice(start, start + 4);
+      const check = checksumChar(chunk);
+      // One casing digit per character and one for the checksum character; numbers are always 0.
+      const casing = [...chunk + check].map(char => /[A-Z]/.test(char) ? '1' : '0').join('');
+      rows.push(`${[...chunk].map(charWord).join(' ')} ${casing} ${charWord(check)}`);
+    }
+    return [...rows, await finalChecksum(rows)];
   }
 
   // Adds the 4-byte double SHA-256 checksum to the 78 xpub bytes.
@@ -313,5 +332,5 @@
     update();
   }
 
-  globalThis.SB58 = { completeWord, checkLines, recover, checksumWord, rebuildDescriptors, setupEditor };
+  globalThis.SB58 = { completeWord, checkLines, recover, encodeLines, checksumWord, rebuildDescriptors, setupEditor };
 })();

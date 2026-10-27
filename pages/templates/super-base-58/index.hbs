@@ -1,0 +1,60 @@
+{{#> layout}}
+<p class="eyebrow">TOOL</p>
+<h1>Super Base 58</h1>
+<p class="lead">Send any text from one device to another by reading Super Base 58 (SB58) lines on one screen and typing them on the other. Everything runs in this page; nothing is sent or saved.</p>
+
+<section class="part">
+  <h2>Encode text into lines</h2>
+  <p>Enter the text to send, then press Make lines. The text is sent as UTF-8 and is not encrypted, so anyone who sees the lines can read it.</p>
+  <form id="sb58-encode-form" class="phonetic-form" autocomplete="off" novalidate>
+    <div class="phonetic-field">
+      <label for="sb58-encode-text">Text to send</label>
+      <textarea id="sb58-encode-text" rows="8" spellcheck="false" autocomplete="off" autocapitalize="off"></textarea>
+    </div>
+    <button type="submit">Make lines</button>
+    <p id="sb58-encode-status" class="sb58-status" role="status"></p>
+  </form>
+
+  <div id="sb58-encode-viewer" class="sb58-viewer" tabindex="0" hidden aria-label="Super Base 58 lines to type on the other device">
+    <div class="sb58-header">
+      <p class="sb58-progress" aria-live="polite"></p>
+      <button type="button" data-action="copy-lines">Copy lines</button>
+      <span class="sb58-copy-status" role="status"></span>
+    </div>
+    <ol class="sb58-lines"></ol>
+    <p class="sb58-help">Click here, then press <kbd>Enter</kbd> to move to the next line, <kbd>Shift</kbd>+<kbd>Enter</kbd> to go back. Type each line on the other device, then the final checksum last.</p>
+  </div>
+</section>
+
+<section class="part">
+  <h2>Decode lines into text</h2>
+  <p>Type the lines shown on the other device, one line per line, then the final checksum on the last line. The text appears once the final checksum matches.</p>
+  <ul>
+    <li>Type each word and press <kbd>Space</kbd>. The word completes from its first letters when only one word starts with them, so <code>x</code> becomes <code>x-ray</code> and <code>sev</code> becomes <code>seven</code>.</li>
+    <li>A few letters are shared by several words (<code>t</code> is tango, two or three), so type enough letters to tell them apart. The page tells you when it cannot complete a word.</li>
+    <li>Each line is 4 words, the casing string such as <code>01101</code>, and the checksum word. Press <kbd>Enter</kbd> after the checksum word to start the next line.</li>
+    <li>The last line is the 5-digit final checksum. Errors name the line to fix.</li>
+  </ul>
+
+  <div id="sb58-decoder">
+    <div class="sb58-editor">
+      <div class="sb58-gutter" aria-hidden="true"></div>
+      <textarea class="sb58-input" rows="14" wrap="off" spellcheck="false" autocomplete="off" autocapitalize="off" aria-label="SB58 lines" aria-describedby="sb58-status sb58-hint sb58-errors"></textarea>
+    </div>
+    <p id="sb58-hint" class="sb58-hint" role="alert"></p>
+    <p id="sb58-status" class="sb58-status" role="status"></p>
+    <ul id="sb58-errors" class="sb58-errors" role="alert"></ul>
+
+    <div class="sb58-result" hidden>
+      <h3>Text</h3>
+      <pre class="sb58-output" tabindex="0"></pre>
+      <button type="button" class="sb58-copy">Copy text</button>
+    </div>
+  </div>
+</section>
+
+<noscript>This page needs JavaScript enabled.</noscript>
+<script src="{{assetsHref}}/sb58-viewer.js" defer></script>
+<script src="{{assetsHref}}/sb58-receive.js" defer></script>
+<script src="{{assetsHref}}/sb58-text.js" defer></script>
+{{/layout}}
