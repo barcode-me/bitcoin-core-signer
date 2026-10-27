@@ -36,6 +36,12 @@ Handlebars.registerPartial('important-callout', await readFile(join(templates, '
 Handlebars.registerPartial('flow-header', await readFile(join(templates, 'shared/flow-header.hbs'), 'utf8'));
 Handlebars.registerPartial('flow-navigation', await readFile(join(templates, 'shared/flow-navigation.hbs'), 'utf8'));
 const rendered = [];
+// Python files a step shows and runs, read once so the page and the script cannot drift apart.
+async function readScripts(step) {
+  return Object.fromEntries(await Promise.all(Object.entries(step.scripts ?? {}).map(
+    async ([name, file]) => [name, (await readFile(join(root, file), 'utf8')).trimEnd()],
+  )));
+}
 async function renderPage(template, filename, context = {}) {
   const render = Handlebars.compile(await readFile(join(templates, template), 'utf8'), { preventIndent: true });
   // Resolve site routes from this output page, not from the web server root.
@@ -56,6 +62,7 @@ async function renderPage(template, filename, context = {}) {
     })),
     ...context,
     homeHref: pageHref('/'),
+    assetsHref: pageHref('/assets'),
     stylesheetHref: pageHref('/assets/style.css'),
     steps: context.steps?.map(localLink),
     previous: context.previous && localLink(context.previous),
@@ -80,6 +87,7 @@ for (const section of sections) {
     description: step.description,
     stepTitle: step.title,
     stepNumber: step.number,
+    scripts: await readScripts(step),
     stepCount: steps.length,
     steps: steps.map(item => ({ ...item, isCurrent: item.slug === step.slug })),
     previous: index ? steps[index - 1] : { href: '/', title: 'Contents' },

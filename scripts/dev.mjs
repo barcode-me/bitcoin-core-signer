@@ -6,7 +6,7 @@ import { fileURLToPath } from 'node:url';
 import { setTimeout as delay } from 'node:timers/promises';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
-const sources = ['pages/templates', 'pages/assets', 'scripts/build-pages.mjs'];
+const sources = ['pages/templates', 'pages/assets', 'python', 'scripts/build-pages.mjs'];
 let stopping = false;
 let child;
 

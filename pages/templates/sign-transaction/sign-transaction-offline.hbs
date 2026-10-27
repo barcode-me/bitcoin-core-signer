@@ -2,6 +2,70 @@
 {{> flow-header}}
 
 <section class="example-section">
-  <p></p>
+  {{#> important-callout}}
+  ONLY USE THIS ON YOUR SECURE OFFLINE DEVICE. Input is sent only to the local server on this device and is not saved.
+  {{/important-callout}}
+
+  <h2>Step 1: Decrypt your backup into a seed phrase</h2>
+  <p>The page runs the Python scripts through a small server on this device. It listens on <code>127.0.0.1</code> only, accepts the page's POST requests, and runs only the scripts it lists.</p>
+  <p>This page must be served over HTTP on port 8000, or the local server will refuse it. If it is not already running, start the page server from the project folder in its own terminal and open <code>http://127.0.0.1:8000/</code>. Opening the page from a file does not work.</p>
+  {{#> code-block}}python3 -m http.server 8000 --directory build{{/code-block}}
+  <p>First, from the project folder, create a Python environment and install the dependencies in <code>python/requirements.txt</code> (this includes <code>embit</code>). Installing needs internet access, so do it before you go offline.</p>
+  {{#> code-block}}python3 -m venv python/venv
+source python/venv/bin/activate
+pip3 install -r python/requirements.txt{{/code-block}}
+  <p>Then start the script server and leave it running. In a new terminal, run <code>source python/venv/bin/activate</code> again first:</p>
+  {{#> code-block}}python3 python/server.py{{/code-block}}
+  <p id="server-status" class="server-status" role="status">Checking for the local server…</p>
+
+  <p>Enter your encrypted backup and the secret used to encrypt it. The secret is hashed with SHA-256 to make the one-time pad, which is then XORed with your backup to give the BIP39 bits. BIP39 encodes those bits as 12 or 24 words, 11 bits per word. The script below does this, and you can run it here or copy it and run it yourself.</p>
+
+  <form id="decrypt-form" class="phonetic-form" autocomplete="off" novalidate
+        data-server="http://127.0.0.1:8765" data-script="decrypt-backup-to-bip39">
+    <fieldset class="field-group">
+      <legend>Encrypted backup format</legend>
+      <label class="choice"><input type="radio" name="encoding" value="decimal"> Decimal</label>
+      <label class="choice"><input type="radio" name="encoding" value="hex" checked> Hexadecimal</label>
+    </fieldset>
+    <div class="phonetic-field">
+      <label for="backup">Encrypted backup</label>
+      <textarea id="backup" rows="3" spellcheck="false" autocomplete="off" autocapitalize="off"></textarea>
+    </div>
+
+    <fieldset class="field-group">
+      <legend>Seed phrase length</legend>
+      <label class="choice"><input type="radio" name="words" value="12" checked> 12 words</label>
+      <label class="choice"><input type="radio" name="words" value="24"> 24 words</label>
+    </fieldset>
+
+    <div class="phonetic-field">
+      <label for="otp">One-time pad</label>
+      <input id="otp" type="password" spellcheck="false" autocomplete="off" disabled>
+      <label class="choice"><input type="checkbox" id="same-as-passphrase" checked> Same as passphrase</label>
+    </div>
+    <div class="phonetic-field">
+      <label for="passphrase">Passphrase</label>
+      <input id="passphrase" type="password" spellcheck="false" autocomplete="off">
+    </div>
+    <label class="choice"><input type="checkbox" id="show-secrets"> Show one-time pad and passphrase</label>
+  </form>
+
+  <div class="notebook-cell">
+    <div class="notebook-toolbar">
+      <button type="button" id="run-script" class="run-button" aria-describedby="run-status">&#9654; Run</button>
+      <button type="button" id="copy-script">Copy code</button>
+      <span id="run-status" class="run-status" role="status"></span>
+    </div>
+    {{#> code-block caption="Python" language="python"}}{{scripts.decryptBackup}}{{/code-block}}
+    <div class="notebook-output" id="run-output" hidden aria-live="polite">
+      <p class="notebook-output-label">Output</p>
+      <pre id="run-result" tabindex="0"></pre>
+    </div>
+  </div>
+  <p>To run it yourself, save the code as <code>decrypt-backup-to-bip39.py</code> and run it with the environment above active. It asks for the backup, passphrase and one-time pad, hidden as you type:</p>
+  {{#> code-block}}python3 decrypt-backup-to-bip39.py --words 12 --encoding hex{{/code-block}}
+  <noscript>Running the script on this page needs JavaScript enabled. You can copy the code and run it yourself.</noscript>
+</section>
+<script src="{{assetsHref}}/decrypt-backup.js" defer></script>
 {{> flow-navigation}}
 {{/layout}}

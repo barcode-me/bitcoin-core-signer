@@ -68,3 +68,13 @@ The wrapper, accessible caption, and language class are defined once in `pages/t
 `pages/templates/shared/` contains the common layout, flow header, Back/Next navigation, code block, and IMPORTANT callout. Both flows use these partials.
 
 Recovery steps live in `pages/templates/recover-from-backup/`, with their order and titles in `steps.json`. Add a matching `.hbs` template for each step, using `flow-header` and `flow-navigation` just as in the backup flow. Both Contents lists and navigation update automatically. Recovery currently has one Recovery step linking to the relevant setup and wallet recovery instructions. More steps can be added to its steps.json without changing the build script.
+
+## Runnable Python in a step
+
+A step can show a script from `python/` and run it from the page. Add `"scripts": {"name": "python/file.py"}` to the step in `steps.json` and print it in the template with `{{#> code-block caption="Python" language="python"}}{{scripts.name}}{{/code-block}}`. The build inlines the file into the page.
+
+The page sends the inputs as a POST request to `python/server.py`, which the user starts with `python3 python/server.py`. The server is Python standard library only and listens on `127.0.0.1:8765` (`--port` changes it). A request is `POST /run` with `{"script": "<name>", "inputs": {...}}`. The server imports `python/<name>.py` and calls the function registered for that name in `SCRIPTS`, passing the inputs as keyword arguments. Scripts must be listed in `SCRIPTS` with their function and accepted inputs, otherwise they cannot run. Third-party packages go in `python/requirements.txt` (currently `embit`). Set up the environment with `python3 -m venv python/venv`, `source python/venv/bin/activate` and `pip3 install -r python/requirements.txt`, then start the server from that environment. `python/venv/` is git-ignored.
+
+The server answers only requests whose `Host` is localhost and whose `Origin` is the guide's pages, by default `http://localhost:8000` and `http://127.0.0.1:8000` (`--allow-origin` adds others). This keeps other websites in the browser from calling it. Serve `build/` on port 8000, or pass `--allow-origin` for the port you use, and update `data-server` in the template if you change the server port.
+
+Keep a script's logic in functions and call them from `main()` under `if __name__ == "__main__":`, since the server imports the file instead of running it.

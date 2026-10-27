@@ -12,6 +12,9 @@
   {
     "slug": "sign-transaction-offline",
     "title": "Sign transaction Offline Device",
-    "description": "Offline device flow"
+    "description": "Offline device flow",
+    "scripts": {
+      "decryptBackup": "python/decrypt-backup-to-bip39.py"
+    }
   }
 ]

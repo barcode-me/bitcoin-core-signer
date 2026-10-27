@@ -102,3 +102,24 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fo
 .word-suggestions { padding: 8px; border: 1px solid #a4b29e; border-radius: 5px; background: #f5f6f0; margin-top: 6px; }
 .word-suggestions button { margin: 3px; font: 14px ui-monospace, monospace; }
 #recovery-result { margin-top: 24px; }
+
+.phonetic-form .field-group { margin: 0 0 20px; padding: 0; border: 0; }
+.phonetic-form .field-group legend { padding: 0; font-size: 14px; font-weight: 600; margin-bottom: 7px; }
+.phonetic-form label.choice { display: inline-flex; align-items: center; gap: 8px; margin: 0 20px 6px 0; font-weight: 400; }
+.phonetic-form input[type=radio], .phonetic-form input[type=checkbox] { width: auto; margin: 0; accent-color: #304632; }
+.phonetic-form input:disabled { background: #eef0e7; }
+.notebook-cell { margin: 28px 0 16px; }
+.notebook-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-bottom: 10px; }
+.notebook-toolbar button { cursor: pointer; padding: 8px 14px; border: 1px solid #a4b29e; border-radius: 5px; background: #e8ecdf; color: #233f2a; font: inherit; font-size: 14px; }
+.notebook-toolbar button:hover:not(:disabled) { background: #d7e0ce; }
+.notebook-toolbar button:disabled { cursor: progress; opacity: .6; }
+.notebook-toolbar .run-button { background: #304632; border-color: #304632; color: #fff; }
+.notebook-toolbar .run-button:hover:not(:disabled) { background: #3d5a40; }
+.notebook-toolbar button:focus-visible { outline: 2px solid #456850; outline-offset: 2px; }
+.run-status { font-size: 13px; color: #60665a; }
+.code-block pre { max-height: 560px; }
+.notebook-output { margin-top: 12px; border: 1px solid #cbd1c3; border-left: 4px solid #456850; border-radius: 6px; background: #fff; }
+.notebook-output-label { margin: 0; padding: 7px 16px; border-bottom: 1px solid #e1e4da; font-size: 11px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: #58664f; }
+.notebook-output pre { margin: 0; padding: 14px 16px; white-space: pre-wrap; overflow-wrap: anywhere; font: 14px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+.notebook-output pre.is-error { color: #a22d20; }
+.server-status { font-size: 13px; color: #60665a; margin: 10px 0 24px; }
