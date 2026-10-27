@@ -3,6 +3,12 @@
 <h1>Super Base 58</h1>
 <p class="lead">Send any text from one device to another by reading Super Base 58 (SB58) lines on one screen and typing them on the other. Everything runs in this page; nothing is sent or saved.</p>
 
+<section class="example-section">
+  <h2>How it works</h2>
+  <p>Super Base 58 (SB58) is inspired by a format created by the bitcoin yeti guide. SB58 uses the NATO phonetic alphabet to encode base58 data. Each character in the base58 data is encoded as a word from the NATO phonetic alphabet. It ignores casing to improve UX for reading and typing. Since base58 does require casing it supports it with an additional 5-bit binary string where each of the first four bits signals whether that character is upper (1) or lowercase (0), the fifth bit does the same for the checksum word, and numbers ignore casing. Numbers are spelled out like 7 = seven.</p>
+  <p>Then there are checksums. Each line contains 4 words and one binary casing string followed by a checksum word that comes from yeti. It is a position based checksum and there is only a single correct checksum word per 4 words. A single SB58 line looks like this <code>seven charlie tango bravo 01101 lima</code> which is base58 <code>7CTb</code> and the checksum is there to ensure everything else matches. Yeti uses casing instead of the binary map, but I think casing makes it much harder and slower to type because it requires more focus. Whereas typing everything lowercase and reading a 5-bit binary string is straight forward. With the UX help of the editor below it results in very fast typing. Finally SB58 has a final checksum which is the last two bytes of the sha256 hash of all the lines above joined by newlines, written as a 5 digit decimal number. If you skipped a line or added one line or changed the order of lines the final checksum will not match.</p>
+</section>
+
 <section class="part">
   <h2>Encode text into lines</h2>
   <p>Enter the text to send, then press Make lines. The text is sent as UTF-8 and is not encrypted, so anyone who sees the lines can read it.</p>
@@ -23,6 +29,14 @@
     </div>
     <ol class="sb58-lines"></ol>
     <p class="sb58-help">Click here, then press <kbd>Enter</kbd> to move to the next line, <kbd>Shift</kbd>+<kbd>Enter</kbd> to go back. Type each line on the other device, then the final checksum last.</p>
+  </div>
+
+  <div id="sb58-encode-base58" class="sb58-result" hidden>
+    <h3>Base58</h3>
+    <p class="sb58-status">The lines spell out this Base58 text, 4 characters per line.</p>
+    <pre class="sb58-output" tabindex="0"></pre>
+    <button type="button" class="sb58-copy">Copy Base58</button>
+    <span class="sb58-copy-status" role="status"></span>
   </div>
 </section>
 
