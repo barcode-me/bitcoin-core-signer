@@ -14,6 +14,7 @@ const sections = [
   { slug: 'recover-from-backup', title: 'Recover from backup', description: 'Restore your wallet and verify recovery.' },
   { slug: 'encrypt-your-backups', title: 'Encrypt your backups', description: 'Encrypt a seed phrase or extended private key backup.' },
   { slug: 'super-base-58', title: 'Super Base 58', description: 'Send text between devices as lines typed by hand.', standalone: true },
+  { slug: 'super-base-58-v2', title: 'Super Base 58 v2', description: 'Send text between devices as lowercase Base58 typed by hand.', standalone: true },
   { slug: 'faq', title: 'FAQ', description: 'Frequently asked questions.', standalone: true },
 ];
 for (const section of sections) {

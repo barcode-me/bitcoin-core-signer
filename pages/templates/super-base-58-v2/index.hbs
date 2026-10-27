@@ -1,0 +1,68 @@
+{{#> layout}}
+<p class="eyebrow">TOOL</p>
+<h1>Super Base 58 v2</h1>
+<p class="lead">Send any text from one device to another by reading lowercase Base58 groups on one screen and typing them on the other. Everything runs in this page; nothing is sent or saved.</p>
+
+<section class="example-section">
+  <h2>How it works</h2>
+  <p>SB58 v2 drops the phonetic words of <a href="../super-base-58/index.html">Super Base 58</a> and shows the Base58 text itself, all in lowercase and in groups of 4 characters. Base58 needs its casing, so each group is followed by one hex character holding 4 casing bits, one per character from the top bit down: an uppercase letter is 1, a lowercase letter or a number is 0. The Base58 group <code>7CTb</code> is written <code>7ctb6</code>, since its bits are <code>0110</code>. A shorter last group pads the remaining bits with 0. Everything can be typed in lowercase.</p>
+  <p>Then there are checksums. After every 25 groups (100 Base58 characters), or fewer for the last block, comes a block checksum: the last two bytes of the SHA-256 hash of those groups as typed, casing characters included, in lowercase and without spaces, as 4 hex characters. Each block is checked as soon as it is typed, casing included. At the very end comes the final checksum: the last two bytes of the SHA-256 hash of the data itself, the bytes the Base58 text decodes to, as 4 hex characters. It catches missing or reordered blocks.</p>
+  <p>Spaces and line breaks are ignored when decoding, so the data is read by position: a full block is always 125 characters and 4 checksum characters, and whatever follows the full blocks is the last block, its checksum and the final checksum.</p>
+</section>
+
+<section class="part">
+  <h2>Encode text</h2>
+  <p>Enter the text to send, then press Encode. The text is sent as UTF-8 and is not encrypted, so anyone who sees the lines can read it.</p>
+  <form id="sb58v2-encode-form" class="phonetic-form" autocomplete="off" novalidate>
+    <div class="phonetic-field">
+      <label for="sb58v2-encode-text">Text to send</label>
+      <textarea id="sb58v2-encode-text" rows="8" spellcheck="false" autocomplete="off" autocapitalize="off"></textarea>
+    </div>
+    <button type="submit">Encode</button>
+    <p id="sb58v2-encode-status" class="sb58-status" role="status"></p>
+  </form>
+
+  <div id="sb58v2-encode-viewer" class="sb58-viewer" tabindex="0" hidden aria-label="Super Base 58 v2 lines to type on the other device">
+    <div class="sb58-header">
+      <p class="sb58-progress" aria-live="polite"></p>
+      <button type="button" data-action="copy-lines">Copy lines</button>
+      <span class="sb58-copy-status" role="status"></span>
+    </div>
+    <ol class="sb58-lines"></ol>
+    <p class="sb58-help">Click here, then press <kbd>Enter</kbd> to move to the next line, <kbd>Shift</kbd>+<kbd>Enter</kbd> to go back. Type each group with its casing character straight after it, shown in a different colour, then the block checksums and the final checksum.</p>
+  </div>
+
+  <div id="sb58v2-encode-base58" class="sb58-result" hidden>
+    <h3>Base58</h3>
+    <p class="sb58-status">The lines spell out this Base58 text, with its casing.</p>
+    <pre class="sb58-output" tabindex="0"></pre>
+    <button type="button" class="sb58-copy">Copy Base58</button>
+    <span class="sb58-copy-status" role="status"></span>
+  </div>
+</section>
+
+<section class="part">
+  <h2>Decode text</h2>
+  <p>Type what the other device shows: the groups with their block checksums, then the final checksum. The text appears once every checksum matches.</p>
+  <ul>
+    <li>Spaces and line breaks do not matter, so type the groups however is easiest.</li>
+    <li>Everything can be typed in lowercase.</li>
+    <li>Each group's casing character is checked as it is typed, and each block as soon as its checksum is typed. Errors name the block or group to fix.</li>
+  </ul>
+
+  <div id="sb58v2-decoder">
+    <textarea class="sb58v2-input" rows="14" spellcheck="false" autocomplete="off" autocapitalize="off" aria-label="SB58 v2 lines" aria-describedby="sb58v2-status sb58v2-errors"></textarea>
+    <p id="sb58v2-status" class="sb58-status" role="status"></p>
+    <ul id="sb58v2-errors" class="sb58-errors" role="alert"></ul>
+
+    <div class="sb58-result" hidden>
+      <h3>Text</h3>
+      <pre class="sb58-output" tabindex="0"></pre>
+      <button type="button" class="sb58-copy">Copy text</button>
+    </div>
+  </div>
+</section>
+
+<noscript>This page needs JavaScript enabled.</noscript>
+<script src="{{assetsHref}}/sb58-v2.js" defer></script>
+{{/layout}}

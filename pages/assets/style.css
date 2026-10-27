@@ -136,6 +136,10 @@ kbd { padding: .1em .4em; border: 1px solid #a4b29e; border-bottom-width: 2px; b
 .sb58-lines li.is-current .line-casing { color: #ffd98a; }
 .sb58-lines li.is-current .line-checksum { color: #b9e0b4; }
 .sb58-help { margin: 10px 0 0; font-size: 13px; color: #60665a; }
+.sb58-lines .line-words { white-space: pre; }
+.sb58-lines .line-words .line-casing { color: #8a5a00; }
+.sb58v2-input { display: block; width: 100%; box-sizing: border-box; margin: 20px 0 8px; padding: 12px; border: 1px solid #a4b29e; border-radius: 5px; background: #fff; color: #202923; font: 15px/1.6 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; resize: vertical; }
+.sb58v2-input:focus { outline: 2px solid #456850; outline-offset: 2px; }
 .part { margin: 40px 0; padding: 28px 28px 12px; border: 1px solid #cbd1c3; border-left: 6px solid #456850; border-radius: 8px; background: #fff; }
 .part:first-of-type { margin-top: 24px; }
 .part > h2 { margin: 0 0 16px; padding-bottom: 14px; border-bottom: 1px solid #e1e4da; font-size: 22px; font-weight: 600; color: #233f2a; }
