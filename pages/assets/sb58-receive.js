@@ -109,21 +109,84 @@
     const bytes = [];
     while (number) { bytes.unshift(Number(number & 255n)); number >>= 8n; }
     for (const char of chars) { if (char !== '1') break; bytes.unshift(0); }
-    const data = new Uint8Array(bytes);
-    let descriptors;
-    try {
-      descriptors = JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(data));
-    } catch {
-      throw new Error('The data checks out but is not a list of descriptors.');
+    return rebuildDescriptors(new Uint8Array(bytes));
+  }
+
+  // Address types in bit order, as in python/descriptors-to-sb58.py.
+  const scriptTypes = [
+    { bit: 1, wrap: key => `pkh(${key})`, purpose: '44h' },
+    { bit: 2, wrap: key => `sh(wpkh(${key}))`, purpose: '49h' },
+    { bit: 4, wrap: key => `wpkh(${key})`, purpose: '84h' },
+    { bit: 8, wrap: key => `tr(${key})`, purpose: '86h' },
+  ];
+  const xpubLength = 78;
+  const hex = bytes => [...bytes].map(byte => byte.toString(16).padStart(2, '0')).join('');
+
+  function base58Encode(bytes) {
+    let number = 0n;
+    for (const byte of bytes) number = number * 256n + BigInt(byte);
+    let encoded = '';
+    while (number) { encoded = base58[Number(number % 58n)] + encoded; number /= 58n; }
+    for (const byte of bytes) { if (byte) break; encoded = `1${encoded}`; }
+    return encoded;
+  }
+
+  // Adds the 4-byte double SHA-256 checksum to the 78 xpub bytes.
+  async function xpubString(bytes) {
+    const hash = async data => new Uint8Array(await crypto.subtle.digest('SHA-256', data));
+    const check = (await hash(await hash(bytes))).slice(0, 4);
+    return base58Encode(new Uint8Array([...bytes, ...check]));
+  }
+
+  // The descriptor checksum from Bitcoin Core's descriptor.cpp (BIP 380).
+  const checksumInput = '0123456789()[],\'/*abcdefgh@:$%{}IJKLMNOPQRSTUVWXYZ&+-.;<=>?!^_|~ijklmnopqrstuvwxyzABCDEFGH`#"\\ ';
+  const checksumChars = 'qpzry9x8gf2tvdw0s3jn54khce6mua7l';
+  const generators = [0xf5dee51989n, 0xa9fdca3312n, 0x1bab10e32dn, 0x3706b1677an, 0x644d626ffdn];
+  function descriptorChecksum(descriptor) {
+    const polymod = (c, value) => {
+      const top = c >> 35n;
+      c = ((c & 0x7ffffffffn) << 5n) ^ BigInt(value);
+      generators.forEach((generator, bit) => { if ((top >> BigInt(bit)) & 1n) c ^= generator; });
+      return c;
+    };
+    let c = 1n, cls = 0, count = 0;
+    for (const char of descriptor) {
+      const position = checksumInput.indexOf(char);
+      c = polymod(c, position & 31);
+      cls = cls * 3 + (position >> 5);
+      if (++count === 3) { c = polymod(c, cls); cls = 0; count = 0; }
     }
-    if (!Array.isArray(descriptors) || !descriptors.length || descriptors.some(item => typeof item !== 'string')) {
-      throw new Error('The data checks out but is not a list of descriptors.');
+    if (count) c = polymod(c, cls);
+    for (let i = 0; i < 8; i++) c = polymod(c, 0);
+    c ^= 1n;
+    return Array.from({ length: 8 }, (_, i) => checksumChars[Number((c >> BigInt(5 * (7 - i))) & 31n)]).join('');
+  }
+
+  // Bytes: [master fingerprint: 4][address type bits: 1][xpub: 78 per type]. Each type gets a receive (/0/*) and change (/1/*) descriptor.
+  async function rebuildDescriptors(data) {
+    const bits = data[4];
+    const types = scriptTypes.filter(type => bits & type.bit);
+    if (data.length < 5 || !types.length || bits & ~15 || data.length !== 5 + types.length * xpubLength) {
+      throw new Error('The data checks out but is not a set of public descriptors.');
     }
-    if (descriptors.some(item => item.includes('prv'))) throw new Error('This data contains a private key. Do not use it. Only public descriptors should be transferred.');
+    const origin = hex(data.slice(0, 4));
+    const descriptors = [];
+    for (const [index, type] of types.entries()) {
+      const key = data.slice(5 + index * xpubLength, 5 + (index + 1) * xpubLength);
+      // Mainnet xpub version, depth 3, account 0h, compressed public key.
+      if (hex(key.slice(0, 5)) !== '0488b21e03' || hex(key.slice(9, 13)) !== '80000000' || ![2, 3].includes(key[45])) {
+        throw new Error('The data checks out but does not hold mainnet account xpubs.');
+      }
+      const xpub = await xpubString(key);
+      for (const branch of [0, 1]) {
+        const descriptor = type.wrap(`[${origin}/${type.purpose}/0h/0h]${xpub}/${branch}/*`);
+        descriptors.push(`${descriptor}#${descriptorChecksum(descriptor)}`);
+      }
+    }
     return descriptors;
   }
 
-  globalThis.SB58 = { completeWord, checkLines, recover, checksumWord };
+  globalThis.SB58 = { completeWord, checkLines, recover, checksumWord, rebuildDescriptors };
   if (typeof document === 'undefined') return;
 
   const input = document.querySelector('#sb58-input');

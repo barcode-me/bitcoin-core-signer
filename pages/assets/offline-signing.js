@@ -112,7 +112,7 @@
     },
     show: encoded => {
       showLines([...encoded.lines, encoded.final_checksum]);
-      return `${encoded.lines.length + 1} lines: ${encoded.lines.length} data lines and the final checksum. They encode ${encoded.bytes.toLocaleString('en-US')} bytes of data (${encoded.base58_chars.toLocaleString('en-US')} Base58 characters).`;
+      return `${encoded.lines.length + 1} lines: ${encoded.lines.length} data lines and the final checksum. They encode the master fingerprint and the xpubs of ${encoded.script_types.join(', ')}: ${encoded.bytes.toLocaleString('en-US')} bytes of data (${encoded.base58_chars.toLocaleString('en-US')} Base58 characters).`;
     },
     clear: () => { viewer.hidden = true; lineList.replaceChildren(); },
   });
