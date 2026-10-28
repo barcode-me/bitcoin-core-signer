@@ -52,6 +52,19 @@ print('24 words (8 bit checksum):', binary_digest[-8:-4], binary_digest[-4:])
 </section>
 
 <section class="example-section">
+  <h2>Use the script instead of doing it by hand</h2>
+  <p>Looking up words and calculating the checksum by hand is slow and easy to get wrong. I recommend you still roll the dice for the entropy, but let <code>entropy-to-bip39.py</code> turn it into the seed phrase. Run it on the offline device from the project folder, with the Python environment from the setup guide active.</p>
+
+  <p>The dice mode in this script allows you to calculate the seedphrase with your own entropy.</p>
+  {{#> code-block}}python3 python/lean/entropy-to-bip39.py --words 12 --dice{{/code-block}}
+
+  <p>If you entropy comes from somewhere else and not dice rolls you would need to enter it as hex, so group your bits in 4 and convert each group to one hex character (<code>0000</code> = <code>0</code> ... <code>1111</code> = <code>f</code>). 128 bits are 32 hex characters for 12 words and 256 bits are 64 hex characters for 24 words.</p>
+  {{#> code-block}}python3 python/lean/entropy-to-bip39.py --words 12{{/code-block}}
+
+  <p>Paste the hex when asked and press <kbd>Enter</kbd>. The script adds the checksum and prints the seed phrase. If you leave the prompt empty it generates the entropy with the computer's secure random number generator instead.</p>
+</section>
+
+<section class="example-section">
   <h2>Create a passphrase</h2>
 
   <p>I like to use the technique or rolling dice and looking up the words in the <a href="../../assets/eff-large-wordlist.txt" target="_blank">eff-large-wordlist.txt</a> you notice each word has 5 digits. You need to roll 5 dice to generate a word. I use anywhere from 6 to 9 words in my passphrases with random casing where the last word is actually just the digits you roll and not the word itself. The casing is done by referencing the last digit word and shifting to uppercase a letter that matches the base-1 index. For example the passphrase you need to memorize is <code>abide-barcode-caucasian-delicate-hello-25653</code> but when you actually type it out it would be <code>aBide-barcOde-caucaSian-deliCate-heLlo-25653</code>. The last digit word is actually a map to know which characters to shift to upper case so a 2 would be the second letter of the first word then the 5 would be the 5 letter of the second word and so on. This way you don't have to remember the random casing, just the lowercase passphrase plus the 5 digits which is itself another word so it is indeed a 6 word passphrase with random casing. For the separators you can use anything you want I prefer just dashes, but you can use any character as long as you remember it. I avoid randomizing it because it gets too complex to remember and a dash or space works just fine.</p>
@@ -59,12 +72,27 @@ print('24 words (8 bit checksum):', binary_digest[-8:-4], binary_digest[-4:])
 </section>
 
 <section class="example-section">
+  <h2>Encrypt the seedphrase with the passphrase</h2>
+
+  <p>To learn more about the encryption used here read the <a href="../../encrypt-your-backups/seed-phrase/index.html" target="_blank">encryption guide</a> that explains it in detail.</p>
+
+  <p>Use the passphrase as the encryption key for the seedphrase backup, that way you only need to memorize one thing. Run <code>encrypt-backup.py</code> on the offline device from the project folder, with the Python environment from the setup guide active.</p>
+  {{#> code-block}}python3 python/lean/encrypt-backup.py --words 12{{/code-block}}
+
+  <p>Enter the seed phrase and the passphrase when asked. The script checks that the seed phrase is valid and prints the encrypted backup as hex in groups of 2 characters, 33 hex characters for 12 words and 66 hex characters for 24 words. This is what you write down or stamp in the next section.</p>
+
+  <p>The passphrase is only asked once, so a typo would make the backup impossible to decrypt. Always check it right away by decrypting it, you can paste the hex with the spaces:</p>
+  {{#> code-block}}python3 python/lean/decrypt-backup.py --words 12{{/code-block}}
+
+  <p>If it prints the same seed phrase you started with the backup is good. Use <code>--words 24</code> on both scripts for a 24 word seed phrase.</p>
+</section>
+
+<section class="example-section">
   <h2>Backup seedphrase and passphrase</h2>
 
-  <p>I am a fan of using physical backups not digital or hardware backups, also I always encrypt them. Simply stamp the hexadecimal encoding of the entropy 132 bits for 12 words 264 bits for 24 words. It would take 33 and 66 hexadecimal characters respectively. Simply write these down on paper or stamp them to metal.</p>
-  <p>Use my <a href="../../encrypt-your-backups/seed-phrase/index.html" target="_blank">encryption guide</a> then come back here. Use the passphrase as encryption key, that way you only need to memorize one thing.</p>
-  <p>Store the decryption key in a password manager and have at least 2 password managers with strong passwords and MFA.</p>
-  <p>I recommend buying a cheap non-bitcoin specific stamp kit of 1mm characters. Then you can use a single 304 stainless steel metal sheet or a washer to stamp the hex characters on. Or use archival paper, but be aware of fire damage. Only use this approach if you live in an area where fires are rare.</p>
+  <p>Simply stamp to metal or write in paper the hexadecimal encoding from the last step. It would take 33 (for 12 words) and 66 (for 24 words) hexadecimal characters respectively. Simply write these down on paper or stamp them to metal.</p>
+  <p>I recommend to store the passphrase which is both the decryption key and the passphrase for the seedphrase in a password manager just in case you forget it and have at least 2 password managers with strong passwords and MFA and enable emergency access.</p>
+  <p>I recommend buying a cheap non-bitcoin specific stamp kit of 1mm characters. Then you can use a single 304 stainless steel metal sheet or a washer to stamp the hex characters on. Or use archival paper which is better than paper because it resits water damage, but be aware of fire damage. Only use paper if you live in an area where fires are rare.</p>
   <p>Redundancy is key, have backups distrubited in at least 3 locations.</p>
 </section>
 

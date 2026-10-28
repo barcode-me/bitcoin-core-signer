@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import argparse
 from getpass import getpass
+import string
 import sys
 from embit import bip39
 from hashlib import sha256
@@ -42,7 +43,12 @@ def main():
       return input()
 
   backup_hex_count = WORD_COUNT_TO_HEX_COUNT[args.words]
-  backup_hex_input = prompt_input(f"Backup as {backup_hex_count} hex chars: ").strip()
+  backup_hex_input = prompt_input(f"Backup as {backup_hex_count} hex chars: ")
+  # Whitespace is dropped, so the grouped output of encrypt-backup.py can be pasted.
+  backup_hex_input = "".join(backup_hex_input.split())
+  invalid = sorted(set(c for c in backup_hex_input if c not in string.hexdigits))
+  if invalid:
+      raise SystemExit(f"Backup must be a valid hex string, found invalid chars: {' '.join(invalid)}")
   backup_bytes = None
 
   if backup_hex_input:
