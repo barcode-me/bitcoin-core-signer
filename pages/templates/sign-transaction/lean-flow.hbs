@@ -28,7 +28,7 @@ pip3 install -r python/requirements.txt{{/code-block}}
   <section class="part">
   <h2>Step 3: Derive the Bitcoin Core descriptors <span class="device-tag is-offline">ON OFFLINE DEVICE</span></h2>
   <p>Enter the seed phrase from Step 2 and your BIP39 passphrase. Both are hidden as you type; add <code>--show-input</code> to see them. The script prints the master fingerprint with and without the passphrase. Compare them with the fingerprints in your records before you import anything.</p>
-  {{#> code-block}}python3 python/lean/convert-bip39-to-core.py --bitcoin-core --wallet my-wallet{{/code-block}}
+  {{#> code-block}}python3 python/lean/convert-bip39-to-core.py --bitcoin-core --wallet my-wallet --show-input{{/code-block}}
   <p>With <code>--bitcoin-core</code> it prints a <code>bitcoin-cli importdescriptors</code> command for the wallet named with <code>--wallet</code>. Leave it out to print the receive and change descriptors of each address type instead, and add <code>--type native-segwit</code> (or <code>legacy</code>, <code>nested-segwit</code>, <code>taproot</code>) to derive only one address type.</p>
   </section>
 
@@ -51,11 +51,16 @@ pip3 install -r python/requirements.txt{{/code-block}}
   <p>List the wallet's public descriptors. Without <code>true</code> at the end, <code>listdescriptors</code> prints only public keys, never private ones:</p>
   {{#> code-block}}bitcoin-cli -rpcwallet=my-wallet listdescriptors{{/code-block}}
   <p>Paste the whole output below. The page turns it into the command that imports these descriptors into the wallet on the online device. Nothing is sent anywhere. It refuses any private descriptor.</p>
+  <p>Also pick the date the wallet was created, or any earlier date. It is set as the timestamp of every descriptor, so the online device scans the blockchain for your transactions from that day on. A later date misses older transactions; an earlier one only makes the scan take longer. If you are unsure, pick an earlier date.</p>
 
   <form id="lean-import-form" class="phonetic-form" autocomplete="off" novalidate>
     <div class="phonetic-field">
       <label for="listdescriptors-output">Output of listdescriptors</label>
       <textarea id="listdescriptors-output" rows="10" wrap="off" spellcheck="false" autocomplete="off" autocapitalize="off"></textarea>
+    </div>
+    <div class="phonetic-field">
+      <label for="descriptors-birthdate">Wallet creation date</label>
+      <input id="descriptors-birthdate" type="date" min="2009-01-03" required aria-required="true">
     </div>
   </form>
 
@@ -188,6 +193,13 @@ pip3 install -r python/requirements.txt{{/code-block}}
   <p>Then finalize it into a raw transaction and send it to the Bitcoin network. <strong>This cannot be undone.</strong></p>
   {{#> code-block}}cat ~/Desktop/signed.psbt | bitcoin-cli -stdin finalizepsbt | jq -r '.hex' | bitcoin-cli -stdin sendrawtransaction{{/code-block}}
   <p>Bitcoin Core prints the transaction ID. Look it up in a block explorer, or wait for it to appear in the wallet with <code>bitcoin-cli -rpcwallet=my-wallet listtransactions</code>. If <code>finalizepsbt</code> cannot finalize the transaction because a signature is missing, its answer has no <code>hex</code>, so <code>jq</code> passes on <code>null</code> and <code>sendrawtransaction</code> fails with a decode error. Nothing is sent; sign it again in Step 11.</p>
+  </section>
+
+  <section class="part">
+  <h2>Step 15: Clean up the files <span class="device-tag">ON ONLINE DEVICE</span></h2>
+  <p>Once Bitcoin Core has printed the transaction ID, the transaction files are no longer needed. They hold no private keys, but they show your addresses, amounts and public keys to anyone who can read this device. Delete the transactions from Steps 8 and 13, and the import command from Step 7 if you ran it, from the project folder:</p>
+  {{#> code-block}}rm -f ~/Desktop/unsigned.psbt ~/Desktop/signed.psbt import-descriptors.sh{{/code-block}}
+  <p>The command in Step 8 also left the destination address and amount in the shell history. Clear it with <code>history -c</code>. Keep the watch-only wallet in Bitcoin Core; it is what creates your next transaction.</p>
   </section>
 </section>
 <script src="{{assetsHref}}/lean-flow.js" defer></script>

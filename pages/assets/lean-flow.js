@@ -1,6 +1,6 @@
 /* Lean flow: builds bitcoin-cli commands from what is typed on the page, to copy into a terminal.
-   Step 5 turns the output of `bitcoin-cli listdescriptors` into the command that imports the public descriptors
-   on the online device. Step 8 makes the walletcreatefundedpsbt command for a payment. Nothing is sent anywhere. */
+   Step 5 turns the output of `bitcoin-cli listdescriptors` and the wallet's creation date into the command that
+   imports the public descriptors on the online device, with that date as their timestamp. Step 8 makes the walletcreatefundedpsbt command for a payment. Nothing is sent anywhere. */
 (() => {
   // Single quotes keep the shell from touching the JSON; a quote inside is closed, escaped and reopened.
   const shellQuote = text => `'${text.replaceAll("'", `'\\''`)}'`;
@@ -45,9 +45,22 @@
   }
 
   const listing = document.querySelector('#listdescriptors-output');
-  setupCommand(document.querySelector('#lean-import-output'), [listing], () => {
+  const birthdate = document.querySelector('#descriptors-birthdate');
+  // A date cannot be picked past today, in the viewer's time zone.
+  const today = new Date();
+  birthdate.max = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+  setupCommand(document.querySelector('#lean-import-output'), [listing, birthdate], () => {
     const text = listing.value.trim();
     if (!text) return null;
+    const date = birthdate.value;
+    if (!date) throw new Error('Pick the date the wallet was created. It is required.');
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || date < birthdate.min || date > birthdate.max) {
+      throw new Error(`The creation date must be between ${birthdate.min} and today.`);
+    }
+    // Start of the picked day in the earliest time zone (UTC+14), so the scan begins
+    // before the wallet existed wherever it was made. Unix time in seconds.
+    const [year, month, day] = date.split('-').map(Number);
+    const timestamp = Math.max(Date.UTC(year, month - 1, day) / 1000 - 14 * 3600, Date.UTC(2009, 0, 3) / 1000);
     let parsed;
     try {
       parsed = JSON.parse(text);
@@ -64,7 +77,7 @@
       if (/[xt]prv/.test(descriptor.desc)) {
         throw new Error('This contains a private descriptor. Run listdescriptors without true, and never move private keys to the online device.');
       }
-      const request = { desc: descriptor.desc, timestamp: descriptor.timestamp ?? 'now' };
+      const request = { desc: descriptor.desc, timestamp };
       if ('active' in descriptor) request.active = descriptor.active;
       if ('internal' in descriptor) request.internal = descriptor.internal;
       if ('range' in descriptor) request.range = descriptor.range;
