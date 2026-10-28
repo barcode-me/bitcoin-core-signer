@@ -26,7 +26,7 @@ apk add setup-xorg-base xfce4 xfce4-terminal lightdm-gtk-greeter dbus
 rc-update add dbus
 rc-update add lightdm
 apk cache download
-lbu commit -d
+lbu commit
 reboot
 {{/code-block}}
 
@@ -44,18 +44,15 @@ apk add git bitcoin bitcoin-cli
 cd ~/Downloads
 git clone https://github.com/barcode-me/bitcoin-core-signer.git
 cd bitcoin-core-signer/python
-python3 -m venv venv
-source venv/bin/activate
-pip3 install -r requirements.txt
 
-lbu add ~/bitcoin-core-signer # to persist a custom directory to the USB
-lbu commit -d
-{{/code-block}}
-<p>To scan QR codes, the scripts read the camera with OpenCV. If pip cannot install <code>opencv-python</code> on Alpine, install Alpine's own package and let the environment use it, then install the rest of the requirements:</p>
-{{#> code-block}}apk add py3-opencv
+apk add py3-opencv
 python3 -m venv --system-site-packages venv
 source venv/bin/activate
-grep -v opencv requirements.txt | pip3 install -r /dev/stdin{{/code-block}}
+grep -v opencv requirements.txt | pip3 install -r /dev/stdin
+
+lbu add ~/bitcoin-core-signer # to persist a custom directory to the USB
+lbu commit
+{{/code-block}}
 
 <p>At this point everything is in place so just reboot and loggin again to ensure everything shows up as it was. When everything looks good go ahead and unmount the USB and confirm there are no drives attached. Then physically eject the USB from the device:</p>
 
@@ -67,7 +64,7 @@ df -h # no longer mounted
 # now physically eject the USB from the device
 {{/code-block}}
 
-<p>Now if you want to make modifications to your system just reboot connect to the internet via an ethernet cable and make the requried changes and run <code>lbu commit -d</code>, unmount and eject the USB and continue on.</p>
+<p>Now if you want to make modifications to your system just reboot connect to the internet via an ethernet cable and make the requried changes and run <code>lbu commit</code>, unmount and eject the USB and continue on.</p>
 
 </section>
 {{> flow-navigation}}
