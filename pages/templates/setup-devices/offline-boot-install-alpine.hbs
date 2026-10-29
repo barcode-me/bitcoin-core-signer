@@ -42,15 +42,17 @@ reboot
 apk add git jq bitcoin bitcoin-cli
 
 cd ~/Downloads
-git clone https://github.com/barcode-me/bitcoin-core-signer.git
-cd bitcoin-core-signer/python
+wget https://github.com/barcode-me/bitcoin-core-signer/releases/download/v1.3.0/bitcoin-core-signer-v1.3.0.zip
+unzip bitcoin-core-signer-v1.3.0.zip
+rm bitcoin-core-signer-v1.3.0.zip
+cd bitcoin-core-signer-v1.3.0/python
 
 apk add py3-opencv
 python3 -m venv --system-site-packages venv
 source venv/bin/activate
 grep -v opencv requirements.txt | pip3 install -r /dev/stdin
 
-lbu add ~/bitcoin-core-signer # to persist a custom directory to the USB
+lbu add ~/bitcoin-core-signer-v1.3.0 # to persist a custom directory to the USB
 lbu commit
 {{/code-block}}
 

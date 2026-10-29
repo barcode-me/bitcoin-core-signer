@@ -61,17 +61,33 @@ prune=150000 # number of MB 150GB
 </section>
 
 <section class="example-section">
+<h2 id="shell-heading">Mount external drive</h2>
+<p>This is optional if you don't have an external drive. Simply connect the SSD and open the disks app in Ubuntu. Then select your drive check the 1TB size to know which one. Then format the drive to ext4 and enable LUKS to encrypt data. Save the password to a password manager. When this is done, you will be able to mount the drive and it will prompt you for the password. It is ok to let the device to remember the password so you don't have to type it every time. You can then find the path /YOUR/DRIVE in the disks app or in the file explorer or in the terminal by running <code>df -h</code>.</p>
+
 <h2 id="shell-heading">Start Bitcoin Core</h2>
-<p>This will start running bitcoin core in the background:</p>
+<p>This will start running bitcoin core in the background. If you don't have an external drive you can skip the -datadir option and bitcoin will use the default <code>~/.bitcoin</code></p>
 {{#> code-block}}
 bitcoind --daemon -datadir=/YOUR/DRIVE
 {{/code-block}}
 
-<p>You can add an alias in <code>nano ~/.bashrc</code> to avoid typing the full path in case your data dir is static:</p>
+<p>If you are storing the data on an external drive you need to point bitcoin to the data directory. To avoid typing the full command everytime you can create aliases:</p>
 
 {{#> code-block}}
-alias bitcoin-start=bitcoind --daemon -datadir=/YOUR/DRIVE
+alias bitstart=bitcoind --daemon -datadir=/YOUR/DRIVE
+alias bitc=bitcoin-cli -datadir=/YOUR/DRIVE
+
+# pro tip you can have an alias for a specific wallet
+alias bitc1=bitcoin-cli -datadir=/YOUR/DRIVE -rpcwallet=my-wallet1
+alias bitc2=bitcoin-cli -datadir=/YOUR/DRIVE -rpcwallet=my-wallet2
 {{/code-block}}
+
+<p>Another option is to create a symlink from your external drive to the default data directory bitcoin expects. This way you don't have to specify the -datadir option:</p>
+
+{{#> code-block}}
+mkdir $HOME/.bitcoin
+ln -s /YOUR/DRIVE $HOME/.bitcoin
+{{/code-block}}
+
 </section>
 
 <section class="example-section">
@@ -79,9 +95,14 @@ alias bitcoin-start=bitcoind --daemon -datadir=/YOUR/DRIVE
 <p>You need to wait until the node fully syncs before you can actually use it. Like I said, this can take a long time. Check the progress regularly by running:</p>
 </section>
 {{#> code-block}}
-bitcoin-cli -getinfo
+bitcoin-cli --datadir=/YOUR_DRIVE -getinfo
 # or
-tail -f ~/.bitcoin/debug.log
+bitc -getinfo
+
+# you can also see the logs
+tail -n 20 /YOUR/DRIVE/debug.log
+# with a symlink
+tail -n 20 ~/.bitcoin/debug.log
 {{/code-block}}
 
 <p>If the process ever stops you will get errors, simply restart it with <code>bitcoind --daemon -datadir=/YOUR/DRIVE</code>.</p>
